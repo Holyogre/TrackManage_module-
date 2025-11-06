@@ -1,7 +1,15 @@
 /*****************************************************************************
  * @file defstruct.h
  * @author xjl (xjl20011009@126.com)
+ *
  * @brief 该库用于管理对外输出的数据的结构，外界通过唯一函数接口修改里面的参数
+ * 约束和定义写在一起，仅定义内部接口，通信接口写到具体文件里面去
+ * 特性：
+ * 1. 下级流水线只准用到上级流水线(和 **预处理线程** )的数据
+ * 2. 表示航迹，点迹大小情况统一使用uint32_t确保数据长度一致性和非负性
+ * 3. 运动类参数统一使用double
+ * 4. is类型参数统一使用bool
+ *
  * @version 0.1
  * @date 2025-11-03
  *
@@ -21,6 +29,11 @@
 // 时间戳
 #include <ctime>
 #include <chrono>
+
+/*****************************************************************************
+ * @brief 流水线架构：密排四位缓冲区，五个指针
+ * 点航关联读取TrackingBuffer里面的航迹参数和航迹融合参数，检测点迹指针左移
+ *****************************************************************************/
 
 namespace commonData
 {
@@ -47,7 +60,7 @@ namespace commonData
         friend std::ostream &operator<<(std::ostream &os, const Timestamp &ts)
         {
             time_t seconds = ts.milliseconds / 1000;
-            int ms = ts.milliseconds % 1000;
+            int64_t ms = ts.milliseconds % 1000;
 
             std::tm tm_info = *std::localtime(&seconds);
             os << std::put_time(&tm_info, "%Y-%m-%d %H:%M:%S")
@@ -57,136 +70,133 @@ namespace commonData
     };
 
     /*****************************************************************************
-     * @brief 输入结构部分（通讯层负责数据转换）
+     * @brief 预处理线程，预处理段：
+     * 输入条件：无
+     * 输出条件：环形缓冲区存在空闲段（此时航迹管理刚刚处理完）
+     * 通讯层允许输入数据堆积，提供适量弹性时序，处理数据为下图结构，存放到环形缓冲区中
+     * 至少占用一个进程，不占用线程
      *****************************************************************************/
-    // TODO检测点迹头预留接口
+    // 检测点迹结构
     struct DetectedPointHeader
     {
+        uint32_t batch_id;
+        int point_num;
+        Timestamp time;
+
+        // 可变拓展
+        double base_longitude;
+        double base_latitude;
+        double base_normal;
     };
 
-    // TODO预留给检测点迹的
+    // 检测点迹结构
     struct DetectedPoint
     {
-        int todo;
+        // 运动信息
+        double longitude;
+        double latitude;
+
+        // 分区依据
+        double angle;
+        double distance;
+        double doppler;
+
+        // 卡尔曼滤波预处理，不考虑曲率
+        double x;
+        double y;
     };
 
     /*****************************************************************************
-     * @brief 中间结构部分
+     * @brief 航迹关联流水线结构，第一段流水线：
+     * 输入条件：环形缓冲区存在空闲段（此时航迹管理刚刚处理完）
+     * 输出条件：无
+     * 至少占用一个线程，是否占用GPU待定
      *****************************************************************************/
-    // TODO预留给关联点迹的，我的想法是关联点往后放，没关联的点往前放
+    // 关联点迹结构
     struct AssociatedPoint
     {
-        int id;
-        // 其他参数
+        uint32_t track_id;
+        uint32_t point_id;
+
+        // 卡尔曼滤波预处理，不考虑曲率
+        double vx;
+        double vy;
     };
 
-    //  TODO 预留给新航迹
+    /*****************************************************************************
+     * @brief 航迹起批流水线结构&卡尔曼滤波流水线结构，组成并行的第二段流水线：
+     * 输入条件：环形缓冲区存在空闲段（此时航迹关联刚刚处理完）
+     * 输出条件：无
+     * 至少占用三个线程,起批需使用GPU
+     *****************************************************************************/
+    // 航迹结构
     struct NewTrack
     {
-        bool isAis;
-        AssociatedPoint associated_point[4];
+        bool is_ais;
+        uint32_t point_num;
+
+        // 结构待定，给个定长缓冲区吧，反正也没多少内存
     };
 
     // 卡尔曼滤波点迹
     struct PredictedPoint
     {
+        uint32_t track_id;
+        uint32_t point_id;
+
+        bool is_updated; // 表示该点是否被更新
+
+        // 卡尔曼滤波器结果
+        double x;
+        double y;
+        double vx;
+        double vy;
     };
 
-    // 现有航迹结构体
+    /*****************************************************************************
+     * @brief 航迹管理流水线结构，组成第三段流水线：
+     * 输入条件：环形缓冲区存在空闲段（此时航迹管理&卡尔曼滤波刚刚处理完）
+     * 输出条件：UDP(TCP?不确定)发送成功
+     * 至少占用三个线程,起批需使用GPU
+     *****************************************************************************/
     struct ExistTrack
     {
+        uint32_t track_id = 0;
+        uint32_t extrapolation_count = 0;
+        uint32_t point_num = 0;
+        int state = 3; // 0表示航迹正常，1表示航迹外推，2表示航迹终结
+
+        double longitude;
+        double latitude;
+        double sog;      // 对地速度,m/s
+        double cog;      // 对地航向,北偏东角度，度
+        double angle;    // 雷达观测角度，雷达法线顺时针方向，度
+        double distance; // 雷达观测距离，距离雷达站距离，km
+
+        // 卡尔曼滤波预处理，不考虑曲率，辅助关联点迹计算下vx,vy
+        double x;
+        double y;
     };
 
-    // 缓冲区定义
+    /*****************************************************************************
+     * @brief 缓冲区定义，TODO，我想把VECTOR的扩容给删了，改成一开始就开够空间
+     *****************************************************************************/
     struct TrackingBuffer
     {
-        // 未确定部分
+        // 检测点迹结构
         DetectedPointHeader detected_head;
-        DetectedPoint *detected_point; // 发过来的数据包直接存储在缓冲区里面
+        std::vector<DetectedPoint> detected_point;
 
-        // 中间结构，不确定
+        // 关联点迹申明
         std::vector<AssociatedPoint> associated_point;
+
+        // 起批结构
         std::vector<NewTrack> new_track;
 
         // 确定部分
         std::vector<PredictedPoint> predicted_point; // 预测结构
         std::vector<ExistTrack> existed_point;
     };
-
-    /*****************************************************************************
-     * @brief 输出结构部分
-     *****************************************************************************/
-    // 航迹头，请确保数据是完全自包含的数据块
-    struct TrackerHeader
-    {
-        int id = 0;
-        int extrapolation_count = 0;
-        int point_size = 0;
-        int state = 3; // 0表示航迹正常，1表示航迹外推，2表示航迹终结
-
-        void start(int track_id)
-        {
-            id = track_id;
-            extrapolation_count = 0;
-            point_size = 0;
-            int state = 3;
-        };
-
-        void clear()
-        {
-            id = 0;
-            extrapolation_count = 0;
-            point_size = 0;
-            int state = 3;
-        };
-
-        friend std::ostream &operator<<(std::ostream &os, const TrackerHeader &header)
-        {
-            os << "TrackerHeader [";
-            os << "id=" << header.id << ", ";
-            os << "extrapolation_count=" << header.extrapolation_count;
-            os << "]";
-
-            return os;
-        }
-    };
-
-    // 航迹点标准结构
-    struct TrackPoint
-    {
-        double longitude;
-        double latitude;
-        double sog;      // 对地速度
-        double cog;      // 对地航向
-        double angle;    // 雷达观测角度
-        double distance; // 雷达观测距离
-
-        bool is_associated; // 是否关联
-        Timestamp time;
-
-        // 重载 << 操作符用于调试输出
-        friend std::ostream &operator<<(std::ostream &os, const TrackPoint &point)
-        {
-            os << "TrackPoint{"
-               << "lon:" << std::fixed << std::setprecision(6) << point.longitude
-               << ", lat:" << point.latitude
-               << ", sog:" << std::setprecision(1) << point.sog
-               << ", cog:" << point.cog
-               << ", time:" << point.time
-               << "}";
-            return os;
-        }
-    };
-
-    // TODO约束,让DEEPSEEK生成下得了
-    static_assert(std::is_trivially_copyable_v<TrackPoint>,
-                  "TrackPoint 不是平凡的");
-    static_assert(std::is_standard_layout_v<TrackPoint>,
-                  "TrackPoint 不是内存连续的");
-    static_assert(std::is_trivially_copyable_v<TrackerHeader>,
-                  "TrackerHeader 不是平凡的");
-    static_assert(std::is_standard_layout_v<TrackerHeader>,
-                  "TrackerHeader 不是内存连续的");
 
 } // namespace CommonData
 

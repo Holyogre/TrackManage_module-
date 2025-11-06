@@ -57,9 +57,6 @@ namespace trackerManager
             ss << "  总容量: " << manager.getTotalCapacity() << " 个航迹" << std::endl;
             ss << "  使用中: " << manager.getUsedCount() << " 个航迹" << std::endl;
             ss << "  空闲数: " << manager.getFreeCount() << " 个槽位" << std::endl;
-            ss << "  使用率: " << std::fixed << std::setprecision(1)
-               << (manager.getTotalCapacity() > 0 ? (100.0 * manager.getUsedCount() / manager.getTotalCapacity()) : 0.0)
-               << "%" << std::endl;
             ss << "  下个ID: " << manager.next_track_id_ << std::endl;
             ss << "  点容量: " << manager.max_point_size << " 点/航迹" << std::endl;
         }
@@ -81,12 +78,12 @@ namespace trackerManager
             for (size_t i = 0; i < manager.buffer_pool_.size(); i++)
             {
                 const auto &container = manager.buffer_pool_[i];
-                if (container.header.id != 0)
+                if (container.header.track_id != 0)
                 {
                     active_count++;
-                    ss << "  [" << std::setw(3) << i << "] 航迹" << std::setw(4) << container.header.id
+                    ss << "  [" << std::setw(3) << i << "] 航迹" << std::setw(4) << container.header.track_id
                        << " [状态:" << std::setw(4) << stateToString(container.header.state)
-                       << ", 外推:" << std::setw(2) << container.header.extrapolation_count
+                       << ", 外推:" << std::setw(1) << container.header.extrapolation_count
                        << ", 点数:" << std::setw(3) << container.data.size() << "]";
 
                     // 显示最近点的时间（如果有）
@@ -135,7 +132,7 @@ namespace trackerManager
                        << ", 点数:" << container.data.size() << "]";
 
                     // 验证一致性
-                    if (container.header.id != track_id)
+                    if (container.header.track_id != track_id)
                     {
                         ss << " ✗ ID不匹配!";
                     }
@@ -148,7 +145,7 @@ namespace trackerManager
             }
         }
 
-    private: 
+    private:
         // 状态转换辅助函数
         static const char *stateToString(int state)
         {
@@ -191,15 +188,15 @@ namespace trackerManager
                 }
 
                 const auto &container = manager.buffer_pool_[pool_index];
-                if (container.header.id != track_id)
+                if (container.header.track_id != track_id)
                 {
-                    ss << "✗ 映射不一致: 航迹 " << track_id << " 指向的容器ID是 " << container.header.id << std::endl;
+                    ss << "✗ 映射不一致: 航迹 " << track_id << " 指向的容器ID是 " << container.header.track_id << std::endl;
                     consistent = false;
                 }
 
-                if (container.header.point_size != container.data.size())
+                if (container.header.point_num != container.data.size())
                 {
-                    ss << "✗ 映射不一致: 航迹 " << track_id << " header的size是 " << container.header.point_size
+                    ss << "✗ 映射不一致: 航迹 " << track_id << " header的size是 " << container.header.point_num
                        << "实际size是" << container.data.size() << std::endl;
                     consistent = false;
                 }
@@ -219,7 +216,7 @@ namespace trackerManager
         }
 
         // 验证单个航迹
-        static bool validateTrack(const TrackerManager &manager, size_t track_id)
+        static bool validateTrack(const TrackerManager &manager, uint32_t track_id)
         {
             return validateConsistency(manager) && manager.isValidTrack(track_id);
         }

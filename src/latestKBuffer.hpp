@@ -155,7 +155,7 @@ namespace trackerManager
 
     private:
         std::unique_ptr<T[]> buffer_; // data区域，内存格式为连续的数组
-        size_t capacity_;
+        size_t capacity_;  //作为计数器不对外输出结果，不适合使用u32或u64
         size_t head_;
         size_t tail_;
         size_t size_;

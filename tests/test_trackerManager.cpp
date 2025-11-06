@@ -49,9 +49,9 @@ TEST_CASE("TrackerManager 申请新航迹容器", "[TrackerManager][create]")
 
     SECTION("申请多条新航迹")
     {
-        size_t id1 = manager.createTrack();
-        size_t id2 = manager.createTrack();
-        size_t id3 = manager.createTrack();
+        uint32_t id1 = manager.createTrack();
+        uint32_t id2 = manager.createTrack();
+        uint32_t id3 = manager.createTrack();
 
         REQUIRE(id1 == 1);
         REQUIRE(id2 == 2);
@@ -67,7 +67,7 @@ TEST_CASE("TrackerManager 申请新航迹容器", "[TrackerManager][create]")
     SECTION("满空间时申请新航迹")
     {
         // Fill the pool
-        for (int i = 0; i < 10; ++i)
+        for (uint32_t i = 0; i < 10; ++i)
         {
             manager.createTrack();
         }
@@ -84,7 +84,7 @@ TEST_CASE("TrackerManager 申请新航迹容器", "[TrackerManager][create]")
     SECTION("ID自增性测试")
     {
         manager.createTrack();
-        for (int i = 1; i < 10; i++)
+        for (uint32_t i = 1; i < 10; i++)
         {
             manager.deleteTrack(i);
 
@@ -98,10 +98,10 @@ TEST_CASE("TrackerManager 申请新航迹容器", "[TrackerManager][create]")
 TEST_CASE("TrackerManager 放入元素", "[TrackerManager][push]")
 {
     TrackerManager manager(10, 5);
-    size_t track_id = manager.createTrack();
+    uint32_t track_id = manager.createTrack();
 
     // 创建测试点
-    commonData::track_point test_point;
+    TrackPoint test_point;
     test_point.longitude = 116.3974;
     test_point.latitude = 39.9093;
     test_point.sog = 10.5;
@@ -112,7 +112,7 @@ TEST_CASE("TrackerManager 放入元素", "[TrackerManager][push]")
 
     SECTION("放入不存在的航迹")
     {
-        size_t invalid_track_id = 9999;
+        uint32_t invalid_track_id = 9999;
         size_t initial_used = manager.getUsedCount();
         bool result = manager.push_track_point(invalid_track_id, test_point);
 
@@ -125,7 +125,7 @@ TEST_CASE("TrackerManager 放入元素", "[TrackerManager][push]")
         // 填充到容量上限
         for (int i = 0; i < 5; i++)
         {
-            commonData::track_point point = test_point;
+            TrackPoint point = test_point;
             point.longitude += i * 0.001; // 稍微改变位置以区分不同点
             point.time = commonData::Timestamp::now();
             bool result = manager.push_track_point(track_id, point);
@@ -136,7 +136,7 @@ TEST_CASE("TrackerManager 放入元素", "[TrackerManager][push]")
         REQUIRE(manager.isValidTrack(track_id) == true);
 
         // 继续添加应该仍然成功（LatestKBuffer 会自动处理）
-        commonData::track_point extra_point = test_point;
+        TrackPoint extra_point = test_point;
         extra_point.longitude = 120.0;
         bool final_result = manager.push_track_point(track_id, extra_point);
         REQUIRE(final_result == true);
@@ -145,10 +145,10 @@ TEST_CASE("TrackerManager 放入元素", "[TrackerManager][push]")
     SECTION("关联点重置外推计数")
     {
         // 先添加几个非关联点增加外推计数
-        commonData::track_point non_associated_point = test_point;
+        TrackPoint non_associated_point = test_point;
         non_associated_point.is_associated = false;
 
-        for (int i = 0; i < 2; i++)
+        for (uint32_t i = 0; i < 2; i++)
         {
             manager.push_track_point(track_id, non_associated_point);
         }
@@ -161,15 +161,15 @@ TEST_CASE("TrackerManager 放入元素", "[TrackerManager][push]")
 
     SECTION("超过最大外推次数触发删除")
     {
-        commonData::track_point non_associated_point = test_point;
+        TrackPoint non_associated_point = test_point;
         non_associated_point.is_associated = false;
 
         // 添加 MAX_EXTRAPOLATION_TIMES 个非关联点
-        for (int i = 0; i <= MAX_EXTRAPOLATION_TIMES; i++)
+        for (uint32_t i = 0; i <= MAX_EXTRAPOLATION_TIMES; i++)
         {
             bool result = manager.push_track_point(track_id, non_associated_point);
             REQUIRE(result == true);
-            TrackerManagerDebugger::printFullState(manager);
+            // TrackerManagerDebugger::printFullState(manager);
         }
 
         // 再添加一个非关联点应该触发删除
@@ -186,7 +186,7 @@ TEST_CASE("TrackerManager 删除航迹容器", "[TrackerManager][delete]")
 {
 
     TrackerManager manager(10, 5);
-    size_t track_id = manager.createTrack();
+    uint32_t track_id = manager.createTrack();
 
     SECTION("删除存在的航迹")
     {
@@ -199,8 +199,8 @@ TEST_CASE("TrackerManager 删除航迹容器", "[TrackerManager][delete]")
     SECTION("删除不存在的航迹")
     {
         REQUIRE(manager.deleteTrack(track_id + 1) == false);
-        REQUIRE(manager.getUsedCount() == 0);
-        REQUIRE(manager.getFreeCount() == 10);
+        REQUIRE(manager.getUsedCount() == 1);
+        REQUIRE(manager.getFreeCount() == 9);
     }
 
     SECTION("全航迹清理测试")
@@ -209,8 +209,8 @@ TEST_CASE("TrackerManager 删除航迹容器", "[TrackerManager][delete]")
         manager.createTrack();
         manager.createTrack();
         manager.createTrack();
-        REQUIRE(manager.getUsedCount() == 3);
-        REQUIRE(manager.getFreeCount() == 7);
+        REQUIRE(manager.getUsedCount() == 4);
+        REQUIRE(manager.getFreeCount() == 6);
 
         manager.clearAll();
 
@@ -224,17 +224,254 @@ TEST_CASE("TrackerManager 删除航迹容器", "[TrackerManager][delete]")
     }
 }
 
-TEST_CASE("TrackerManager压力测试", "[TrackerManager][testbench]")
+TEST_CASE("TrackerManager NUMA性能测试", "[TrackerManager][test_bench_chrono]")
 {
-    TrackerManager manager(1000, 1000);
+    constexpr uint32_t TRACK_COUNT = 2000;
+    constexpr uint32_t POINTS_PER_TRACK = 2000;
+    constexpr size_t BUFFER_SIZE = 100 * 1024 * 1024; // 100MB缓冲区
 
-    BENCHMARK("航迹快速申请删除测")
+    // 统一的测试数据
+    TrackPoint point;
+    point.longitude = 116.3974;
+    point.latitude = 39.9093;
+    point.sog = 10.5;
+    point.cog = 45.0;
+    point.angle = 30.0;
+    point.distance = 1000.0;
+    point.is_associated = true;
+    point.time = commonData::Timestamp::now();
+
+    auto run_benchmark = [](const std::string &name, auto &&func)
     {
-        size_t id = 0;
-        while (id < 1000)
-        {
-            id = manager.createTrack();
-            manager.deleteTrack(id);
-        }
+        auto start = std::chrono::high_resolution_clock::now();
+        func();
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        std::cout << "[" << name << "] " << duration.count() << " us" << std::endl;
+        return duration;
     };
+
+    SECTION("核心场景1: 航迹创建性能")
+    {
+        TrackerManager manager(TRACK_COUNT, POINTS_PER_TRACK); // 创建类不算时间
+        auto duration = run_benchmark("创建2000个空航迹", [&]()
+                                      {
+            for (uint32_t i = 0; i < TRACK_COUNT; ++i) {
+                manager.createTrack();
+            } });
+
+        double avg_time_per_track = (double)duration.count() / TRACK_COUNT;
+        std::cout << "平均每个航迹创建时间: " << avg_time_per_track << " us" << std::endl;
+        // TrackerManagerDebugger::printStatistics(manager);
+    }
+
+    SECTION("核心场景2: 点迹写入性能")
+    {
+        TrackerManager manager(TRACK_COUNT, POINTS_PER_TRACK);
+
+        // 预先创建所有航迹
+        std::vector<uint32_t> track_ids;
+        for (uint32_t i = 0; i < TRACK_COUNT; ++i)
+        {
+            uint32_t id = manager.createTrack();
+            if (id != 0)
+                track_ids.push_back(id);
+        }
+
+        auto duration = run_benchmark("写入400万个点迹", [&]()
+                                      {
+            for (uint32_t track_id : track_ids) {
+                for (uint32_t j = 0; j < POINTS_PER_TRACK; ++j) {
+                    manager.push_track_point(track_id, point);
+                }
+            } });
+
+        double avg_time_per_point = (double)duration.count() / (TRACK_COUNT * POINTS_PER_TRACK);
+        std::cout << "平均每个点迹写入时间: " << avg_time_per_point << " us" << std::endl;
+        // TrackerManagerDebugger::printFullState(manager);
+    }
+
+    SECTION("核心场景3: 满载打包性能")
+    {
+        TrackerManager manager(TRACK_COUNT, POINTS_PER_TRACK);
+        auto buffer = std::make_unique<char[]>(BUFFER_SIZE);
+
+        // 创建并填充所有航迹
+        std::vector<uint32_t> track_ids;
+        for (uint32_t i = 0; i < TRACK_COUNT; ++i)
+        {
+            uint32_t id = manager.createTrack();
+            if (id != 0)
+            {
+                track_ids.push_back(id);
+                for (uint32_t j = 0; j < POINTS_PER_TRACK; ++j)
+                {
+                    manager.push_track_point(id, point);
+                }
+            }
+        }
+
+        auto duration = run_benchmark("打包2000个满载航迹", [&]()
+                                      {
+                                          size_t total_bytes = 0;
+                                          for (uint32_t track_id : track_ids)
+                                          {
+                                              total_bytes += manager.pack_track(buffer.get(), track_id);
+                                          }
+                                          volatile size_t dummy = total_bytes; // 阻止优化
+                                      });
+
+        // 计算读取带宽
+        size_t total_data = TRACK_COUNT * (sizeof(TrackerHeader) + POINTS_PER_TRACK * sizeof(TrackPoint));
+        double read_bandwidth = total_data / (duration.count() / 1000000.0); // bytes/s
+        std::cout << "打包带宽: " << read_bandwidth / (1024 * 1024 * 1024) << " GB/s" << std::endl;
+    }
+
+    SECTION("核心场景4: 航迹删除性能")
+    {
+        TrackerManager manager(TRACK_COUNT, POINTS_PER_TRACK);
+
+        // 创建并填充所有航迹
+        std::vector<uint32_t> track_ids;
+        for (uint32_t i = 0; i < TRACK_COUNT; ++i)
+        {
+            uint32_t id = manager.createTrack();
+            if (id != 0)
+            {
+                track_ids.push_back(id);
+                for (uint32_t j = 0; j < POINTS_PER_TRACK; ++j) // 虽说理论不应该有影响，实际上还是有一点的
+                {
+                    manager.push_track_point(id, point);
+                }
+            }
+        }
+
+        auto duration = run_benchmark("删除2000个满载航迹", [&]()
+                                      {
+            for (uint32_t track_id : track_ids) {
+                manager.deleteTrack(track_id);
+            } });
+
+        double avg_time_per_track = (double)duration.count() / TRACK_COUNT;
+        std::cout << "平均每个航迹删除时间: " << avg_time_per_track << " us" << std::endl;
+        // TrackerManagerDebugger::printStatistics(manager);
+    }
+}
+
+TEST_CASE("TrackerManager 核心性能测试", "[TrackerManager][benchmark]")
+{
+    constexpr uint32_t TRACK_COUNT = 2000;
+    constexpr uint32_t POINTS_PER_TRACK = 2000;
+    constexpr size_t BUFFER_SIZE = 100 * 1024 * 1024; // 100MB缓冲区
+
+    // 统一的测试数据
+    TrackPoint point;
+    point.longitude = 116.3974;
+    point.latitude = 39.9093;
+    point.sog = 10.5;
+    point.cog = 45.0;
+    point.angle = 30.0;
+    point.distance = 1000.0;
+    point.is_associated = true;
+    point.time = commonData::Timestamp::now();
+
+    SECTION("核心场景1: 航迹创建性能")
+    {
+        TrackerManager manager(TRACK_COUNT, POINTS_PER_TRACK);
+        
+        BENCHMARK("创建2000个空航迹")
+        {
+            for (uint32_t i = 0; i < TRACK_COUNT; ++i) {
+                manager.createTrack();
+            }
+        };
+        
+    }
+
+    SECTION("核心场景2: 点迹写入性能")
+    {
+        TrackerManager manager(TRACK_COUNT, POINTS_PER_TRACK);
+
+        // 预先创建所有航迹
+        std::vector<uint32_t> track_ids;
+        for (uint32_t i = 0; i < TRACK_COUNT; ++i)
+        {
+            uint32_t id = manager.createTrack();
+            if (id != 0)
+                track_ids.push_back(id);
+        }
+
+        BENCHMARK("写入400万个点迹")
+        {
+            for (uint32_t track_id : track_ids) {
+                for (uint32_t j = 0; j < POINTS_PER_TRACK; ++j) {
+                    manager.push_track_point(track_id, point);
+                }
+            }
+        };
+        
+    }
+
+    SECTION("核心场景3: 满载打包性能")
+    {
+        TrackerManager manager(TRACK_COUNT, POINTS_PER_TRACK);
+        auto buffer = std::make_unique<char[]>(BUFFER_SIZE);
+
+        // 创建并填充所有航迹
+        std::vector<uint32_t> track_ids;
+        for (uint32_t i = 0; i < TRACK_COUNT; ++i)
+        {
+            uint32_t id = manager.createTrack();
+            if (id != 0)
+            {
+                track_ids.push_back(id);
+                for (uint32_t j = 0; j < POINTS_PER_TRACK; ++j)
+                {
+                    manager.push_track_point(id, point);
+                }
+            }
+        }
+
+        BENCHMARK("打包2000个满载航迹")
+        {
+            size_t total_bytes = 0;
+            for (uint32_t track_id : track_ids)
+            {
+                total_bytes += manager.pack_track(buffer.get(), track_id);
+            }
+            volatile size_t dummy = total_bytes;
+        };
+
+        // 计算数据总量用于参考
+        size_t total_data = TRACK_COUNT * (sizeof(TrackerHeader) + POINTS_PER_TRACK * sizeof(TrackPoint));
+        std::cout << "总数据量: " << total_data / (1024*1024) << " MB" << std::endl;
+    }
+
+    SECTION("核心场景4: 航迹删除性能")
+    {
+        TrackerManager manager(TRACK_COUNT, POINTS_PER_TRACK);
+
+        // 创建并填充所有航迹
+        std::vector<uint32_t> track_ids;
+        for (uint32_t i = 0; i < TRACK_COUNT; ++i)
+        {
+            uint32_t id = manager.createTrack();
+            if (id != 0)
+            {
+                track_ids.push_back(id);
+                for (uint32_t j = 0; j < POINTS_PER_TRACK; ++j)
+                {
+                    manager.push_track_point(id, point);
+                }
+            }
+        }
+
+        BENCHMARK("删除2000个满载航迹")
+        {
+            for (uint32_t track_id : track_ids) {
+                manager.deleteTrack(track_id);
+            }
+        };
+        
+    }
 }
