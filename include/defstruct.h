@@ -19,6 +19,8 @@
 #include <vector>
 #include <string>
 #include <cstdint> //精确位数整数
+// 文件控制
+#include <fstream>
 // 输出格式控制
 #include <iostream>
 #include <iomanip>
@@ -27,6 +29,8 @@
 #include <chrono>
 // 结构体控制
 #include <type_traits>
+// 工具类
+#include "../utils/utils.hpp"
 
 namespace track_project
 {
@@ -66,13 +70,79 @@ namespace track_project
                 return os;
             }
         };
+
+        // 配置项结构体，皆为可反复修改的参数，初始化配置项编译期间确定，在CMAKE里面
+        struct Config
+        {
+            // IP
+            std::string track_dst_ip = "192.168.1.1";   // 航迹发送端IP
+            std::uint16_t track_dst_port = 5555;             // 航迹发送端端口
+            std::uint16_t track_manager_control_port = 5556; // 航迹管理器控制端口
+            std::uint16_t detected_point_port = 5557;        // 检测点迹接收端口
+
+            // 具体参数
+            double latitude = 0.0;  // 纬度
+            double longitude = 0.0; // 经度
+
+            // 构造
+            Config(const std::string &filepath)
+            {
+                reload(filepath);
+            }
+
+            // 重新加载
+            void reload(const std::string &filepath)
+            {
+                std::ifstream file(filepath);
+
+                // 错误处理
+                if (!file.is_open())
+                {
+                    std::cerr << "错误：无法打开配置文件 " << filepath << std::endl;
+                    return;
+                }
+
+                std::string line;
+                while (std::getline(file, line))
+                {
+                    utils::trim(line);
+                    if (line.empty() || line[0] == '#')
+                        continue;
+
+                    size_t eqPos = line.find('=');
+                    if (eqPos == std::string::npos)
+                        continue;
+
+                    std::string key = line.substr(0, eqPos);
+                    std::string value = line.substr(eqPos + 1);
+                    utils::trim(key);
+                    utils::trim(value);
+
+                    if (key == "TRACK_DST_IP")
+                        track_dst_ip = value;
+                    else if (key == "TRACK_DST_PORT")
+                        track_dst_port = std::stoi(value);
+                    else if (key == "LATITUDE")
+                        latitude = std::stod(value);
+                    else if (key == "LONGITUDE")
+                        longitude = std::stod(value);
+
+                    file.close(); // 先关闭文件
+
+                    std::cout << "=== 配置信息 ===\n"
+                              << "航迹接收端ip: " << track_dst_ip << "\n"
+                              << "航迹接收端端口: " << track_dst_port << "\n"
+                              << "坐标: (" << latitude << ", " << longitude << ")\n";
+                }
+            }
+        };
     } //  namespace commondata
 
     /*****************************************************************************
      * @brief 流水线架构：TrackingBuffer，计划设计为环形缓冲区结构体
      * 特性：
      * 1. 下级流水线只准用到上级流水线(和 **预处理线程** )的数据
-     * 2. 表示航迹，点迹大小情况统一使用uint32_t确保数据长度一致性和非负性
+     * 2. 表示航迹，点迹大小情况统一使用std::uint32_t确保数据长度一致性和非负性
      * 3. 运动类参数统一使用double
      * 4. is类型参数统一使用bool
      *****************************************************************************/
@@ -89,7 +159,7 @@ namespace track_project
         // 检测点迹结构
         struct DetectedPointHeader
         {
-            uint32_t batch_id;
+            std::uint32_t batch_id;
             int point_num;
             commondata::Timestamp time;
 
@@ -125,8 +195,8 @@ namespace track_project
         // 关联点迹结构
         struct AssociatedPoint
         {
-            uint32_t track_id;
-            uint32_t point_id;
+            std::uint32_t track_id;
+            std::uint32_t point_id;
 
             // 卡尔曼滤波预处理，不考虑曲率
             double vx;
@@ -143,7 +213,7 @@ namespace track_project
         struct NewTrack
         {
             bool is_ais;
-            uint32_t point_num;
+            std::uint32_t point_num;
 
             // 结构待定，给个定长缓冲区吧，反正也没多少内存
         };
@@ -151,8 +221,8 @@ namespace track_project
         // 卡尔曼滤波点迹
         struct PredictedPoint
         {
-            uint32_t track_id;
-            uint32_t point_id;
+            std::uint32_t track_id;
+            std::uint32_t point_id;
 
             bool is_updated; // 表示该点是否被更新
 
@@ -171,9 +241,9 @@ namespace track_project
          *****************************************************************************/
         struct ExistTrack
         {
-            uint32_t track_id = 0;
-            uint32_t extrapolation_count = 0;
-            uint32_t point_num = 0;
+            std::uint32_t track_id = 0;
+            std::uint32_t extrapolation_count = 0;
+            std::uint32_t point_num = 0;
             int state = 3; // 0表示航迹正常，1表示航迹外推，2表示航迹终结
 
             double longitude;
@@ -210,18 +280,21 @@ namespace track_project
 
     } // namespace pipeline
 
+    /*****************************************************************************
+     * @brief 通信结构，内存有序排列，方便定长数据读取
+     *****************************************************************************/
     namespace communicate
     {
 // 航迹头，请确保数据是完全自包含的数据块，固定4位存一个数字
 #pragma pack(push, 4)
         struct TrackerHeader
         {
-            uint32_t track_id = 0;
-            uint32_t extrapolation_count = 0;
-            uint32_t point_num = 0;
+            std::uint32_t track_id = 0;
+            std::uint32_t extrapolation_count = 0;
+            std::uint32_t point_num = 0;
             int state = 3; // 0表示航迹正常，1表示航迹外推，2表示航迹终结
 
-            void start(uint32_t id)
+            void start(std::uint32_t id)
             {
                 track_id = id;
                 extrapolation_count = 0;

@@ -4,7 +4,7 @@
 #include <vector>
 #include <iostream>
 
-using namespace trackerManager;
+using namespace trackermanager;
 
 TEST_CASE("LatestKBuffer 基础功能测试 - double类型", "[LatestKBuffer][double]")
 {

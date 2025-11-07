@@ -1,4 +1,0 @@
-#ifndef _TRACK_VISUALIZER_HPP_
-#define _TRACK_VISUALIZER_HPP_
-
-#endif
