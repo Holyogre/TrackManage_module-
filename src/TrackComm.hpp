@@ -11,7 +11,6 @@
 #include <unistd.h>
 // 线程控制
 #include <thread>
-#include <logger.hpp>
 
 namespace track_project
 {
@@ -31,8 +30,8 @@ namespace track_project
                 dest_addr_.sin_port = htons(track_dst_port_);
                 inet_pton(AF_INET, track_dst_ip_.c_str(), &dest_addr_.sin_addr);
 
-                // DEBUG信息 — 使用统一日志库输出
-                LOG_INFO(std::string("TrackComm 初始化: ") + track_dst_ip_ + ":" + std::to_string(track_dst_port_));
+                // DEBUG信息 TODO，改成日志库输出
+                std::cout << "TrackComm初始化: " << track_dst_ip_ << ":" << track_dst_port_ << std::endl;
 
                 // 启动时直接创建socket，避免首次发送延迟
                 create_socket();
@@ -44,7 +43,7 @@ namespace track_project
                 if (sockfd_ >= 0)
                 {
                     close(sockfd_);
-                    LOG_INFO("TrackComm 清理完成");
+                    std::cout << "TrackComm清理完成" << std::endl;
                 }
             }
 
@@ -53,7 +52,7 @@ namespace track_project
             {
                 if (data_count == 0)
                 {
-                    LOG_DEBUG("空跟踪数据，跳过发送");
+                    std::cout << "空跟踪数据，跳过发送" << std::endl;
                     return true;
                 }
 
@@ -62,11 +61,11 @@ namespace track_project
                                       (struct sockaddr *)&dest_addr_, sizeof(dest_addr_));
                 if (sent == static_cast<ssize_t>(data_count * sizeof(float)))
                 {
-                    LOG_DEBUG(std::string("跟踪数据发送成功: ") + std::to_string(sent) + " 字节");
+                    std::cout << "跟踪数据发送成功: " << sent << "字节" << std::endl;
                     return true;
                 }
 
-                LOG_ERROR(std::string("跟踪数据发送失败: ") + std::string(strerror(errno)));
+                std::cerr << "跟踪数据发送失败(尝试" << strerror(errno) << std::endl;
                 return false;
             }
 
@@ -87,7 +86,7 @@ namespace track_project
                 dest_addr_.sin_port = htons(track_dst_port_);                    // 设置端口号
                 inet_pton(AF_INET, track_dst_ip_.c_str(), &dest_addr_.sin_addr); // 将字符串IP地址转换为二进制格式并存入结构体
 
-                LOG_INFO(std::string("TrackComm 重新配置: ") + track_dst_ip_ + ":" + std::to_string(track_dst_port_));
+                std::cout << "TrackComm重新配置: " << track_dst_ip_ << ":" << track_dst_port_ << std::endl; // TODO改成日志库
             }
 
         private:
@@ -97,11 +96,11 @@ namespace track_project
                 sockfd_ = socket(AF_INET, SOCK_DGRAM, 0);
                 if (sockfd_ < 0)
                 {
-                    LOG_ERROR(std::string("创建socket失败: ") + std::string(strerror(errno)));
+                    std::cerr << "创建socket失败: " << strerror(errno) << std::endl;
                     return false;
                 }
 
-                LOG_INFO("Socket 创建成功");
+                std::cout << "Socket创建成功" << std::endl; // TODO改成日志库
                 return true;
             }
 

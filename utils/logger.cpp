@@ -1,7 +1,6 @@
 // src/logger.cpp
 #include "logger.hpp"
 
-#include <cstdlib> 
 #include <iostream>
 #include <chrono>
 
@@ -15,9 +14,9 @@ class SpdlogLogger : public Logger {
 public:
     SpdlogLogger() {
         try {
-            // 日志目录优先从环境变量读取；否则使用 CMake 注入的 TRACKMANAGER_DEFAULT_LOG_DIR
+            // 日志目录从cmakelists种读取 TRACKMANAGER_DEFAULT_LOG_DIR
             std::string log_dir= std::string(TRACKMANAGER_DEFAULT_LOG_DIR);;
-            
+
             // 生成带日期的文件名
             auto now = std::chrono::system_clock::now();
             std::time_t now_time = std::chrono::system_clock::to_time_t(now);

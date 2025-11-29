@@ -121,13 +121,11 @@ namespace track_project
              *****************************************************************************/
             void clearAll();
 
-            // 唯一存在，禁止拷贝
+            // 唯一存在的流水线组件，禁止拷贝，移动
             TrackerManager(const TrackerManager &) = delete;
             TrackerManager &operator=(const TrackerManager &) = delete;
-
-            // 仅允许移动
-            TrackerManager(TrackerManager &&) = default;
-            TrackerManager &operator=(TrackerManager &&) = default;
+            TrackerManager(TrackerManager &&) = delete;
+            TrackerManager &operator=(TrackerManager &&) = delete;
 
             ~TrackerManager() = default;
 

@@ -8,11 +8,10 @@ set(CMAKE_CXX_STANDARD 17)
 enable_testing()  
 
 # 启动日志宏
-add_definitions(-DENABLE_SPDLOG)  # 关键！向编译器传递宏定义
-
+add_definitions(-DENABLE_SPDLOG)  
 
 # 指定日志目录（编译期），如果没有该路径则配置阶段直接失败
-set(TRACKMANAGER_DEFAULT_LOG_DIR "/home/holyogre/TrackManager/log")
+set(TRACKMANAGER_DEFAULT_LOG_DIR "${PROJECT_SOURCE_DIR}/log")
 if(NOT EXISTS ${TRACKMANAGER_DEFAULT_LOG_DIR})
     message(FATAL_ERROR "TRACKMANAGER_DEFAULT_LOG_DIR (${TRACKMANAGER_DEFAULT_LOG_DIR}) 不存在，需要修改")
 endif()

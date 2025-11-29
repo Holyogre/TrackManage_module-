@@ -41,7 +41,7 @@ namespace track_project
                    << std::endl;
 
                 // 输出到日志
-                LOG_INFO(ss.str());
+                LOG_DEBUG << ss.str();
             }
 
             // 1. 打印统计信息
@@ -49,7 +49,7 @@ namespace track_project
             {
                 std::stringstream ss;
                 printStatistics(manager, ss);
-                LOG_INFO(ss.str());
+                LOG_DEBUG << ss.str();
             }
 
             static void printStatistics(const TrackerManager &manager, std::stringstream &ss)
@@ -68,7 +68,7 @@ namespace track_project
             {
                 std::stringstream ss;
                 printMemoryPool(manager, ss);
-                LOG_INFO(ss.str());
+                LOG_DEBUG<<ss.str();
             }
 
             static void printMemoryPool(const TrackerManager &manager, std::stringstream &ss)
@@ -109,7 +109,7 @@ namespace track_project
             {
                 std::stringstream ss;
                 printTrackMapping(manager, ss);
-                LOG_INFO(ss.str());
+                LOG_DEBUG<<ss.str();
             }
 
             static void printTrackMapping(const TrackerManager &manager, std::stringstream &ss)

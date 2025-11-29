@@ -1,22 +1,69 @@
+/*****************************************************************************
+ * @file logger.hpp
+ * @author xjl (xjl20011009@126.com)
+ * @brief 通用日志库
+ * 线程安全
+ * 启用时数据将同步显示到日志文件中，不然退化为cout和cerr
+ * @version 0.1
+ * @date 2025-11-29
+ *
+ * @copyright Copyright (c) 2025
+ *
+ *****************************************************************************/
 #pragma once
 #include <string>
+#include <sstream>
+#include <functional>
+#include <iostream> 
 
-class Logger {
+class Logger
+{
 public:
-    virtual void debug(const std::string& msg) = 0;
-    virtual void info(const std::string& msg) = 0;
-    virtual void error(const std::string& msg) = 0;
-    // ...其他日志级别
-    static Logger* getInstance(); // 工厂方法
+    virtual void debug(const std::string &msg) = 0;
+    virtual void info(const std::string &msg) = 0;
+    virtual void error(const std::string &msg) = 0;
+    static Logger *getInstance();
 };
 
-// 条件编译开关：是否启用日志 △
 #ifdef ENABLE_SPDLOG
-    #define LOG_DEBUG(msg) Logger::getInstance()->debug(msg)
-    #define LOG_INFO(msg)  Logger::getInstance()->info(msg)
-    #define LOG_ERROR(msg) Logger::getInstance()->error(msg)
+class LogStream
+{
+public:
+    explicit LogStream(std::function<void(const std::string &)> sink) : sink_(std::move(sink)) {}
+    ~LogStream()
+    {
+        if (sink_)
+            sink_(oss_.str());
+    }
+
+    template <typename T>
+    LogStream &operator<<(T &&v)
+    {
+        oss_ << std::forward<T>(v);
+        return *this;
+    }
+
+    LogStream &operator<<(std::ostream &(*manip)(std::ostream &))
+    {
+        manip(oss_);
+        return *this;
+    }
+
+private:
+    std::ostringstream oss_;
+    std::function<void(const std::string &)> sink_;
+};
+
+#define LOG_DEBUG ::LogStream([](const std::string &s) { Logger::getInstance()->debug(s); })
+#define LOG_INFO ::LogStream([](const std::string &s) { Logger::getInstance()->info(s); })
+#define LOG_ERROR ::LogStream([](const std::string &s) { Logger::getInstance()->error(s); })
+
 #else
-    #define LOG_DEBUG(msg)
-    #define LOG_INFO(msg)
-    #define LOG_ERROR(msg)
+
+#define LOG_DEBUG \
+    if (false)    \
+    std::cout
+#define LOG_INFO std::cout
+#define LOG_ERROR std::cerr
+
 #endif
