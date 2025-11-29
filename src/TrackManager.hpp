@@ -1,7 +1,7 @@
 /*****************************************************************************
  * @file trackManager.hpp
  * @author xjl (xjl20011009@126.com)
- * @brief 航迹管理器后端服务
+ * @brief 航迹管理器后端服务模块
  * 1、调用latestKBuffer，设计内存池
  * 2.提供航迹创建，航迹删除，航迹合并（同传感器合批），航迹输出服务
  * 3.提供航迹更新功能，且自动实现单群识别，航迹判断
@@ -26,7 +26,7 @@
 #include "../include/defstruct.h"
 
 // 数据结构
-#include "latestKBuffer.hpp"
+#include "LatestKBuffer.hpp"
 namespace track_project
 {
     namespace trackermanager
@@ -138,6 +138,8 @@ namespace track_project
                 return track_id_to_pool_index_.find(track_id) != track_id_to_pool_index_.end();
             }
 
+            // 可视化友元
+            friend class TrackerManagerVisualizer;
             // 测试类专用友元
             friend class TrackerManagerDebugger;
 
@@ -147,7 +149,7 @@ namespace track_project
 
             // 管理数据结构
             std::unordered_map<std::uint32_t, std::uint32_t> track_id_to_pool_index_; // 航迹ID -> 池索引
-            std::vector<std::uint32_t> free_slots_;                              // 空闲槽位索引
+            std::vector<std::uint32_t> free_slots_;                                   // 空闲槽位索引
 
             std::uint32_t next_track_id_; // 内部ID自增性，保证唯一性
             const std::uint32_t max_point_size;

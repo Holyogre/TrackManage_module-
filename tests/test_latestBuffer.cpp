@@ -1,5 +1,5 @@
 #include <catch2/catch_all.hpp>
-#include "../src/latestKBuffer.hpp"
+#include "../src/LatestKBuffer.hpp"
 #include <string>
 #include <vector>
 #include <iostream>

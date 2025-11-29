@@ -1,9 +1,9 @@
 #include <catch2/catch_all.hpp>
-#include "../src/trackManager.hpp"
+#include "../src/TrackManager.hpp"
 #include "TrackerManagerDebugger.hpp"
 #include <cstring>
 #include <iostream>
-#include "../utils/logger.hpp"
+#include "../utils/Logger.hpp"
 
 using namespace track_project::trackermanager;
 using namespace track_project::commondata;

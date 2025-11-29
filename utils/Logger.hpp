@@ -3,7 +3,8 @@
  * @author xjl (xjl20011009@126.com)
  * @brief 通用日志库
  * 线程安全
- * 启用时数据将同步显示到日志文件中，不然退化为cout和cerr
+ * 启用宏定义时数据将同步显示到日志文件中，CMAKE种进行检查 
+ * 退化方式： LOG_DEBUG退化为无输出，LOG_INFO退化为cout，LOG_ERROR退化为cerr
  * @version 0.1
  * @date 2025-11-29
  *

@@ -40,10 +40,10 @@ endfunction()
 # 使用函数添加测试
 add_trackermanager_test(test_latestBuffer 
                 test_latestBuffer.cpp 
-                ../src/latestKBuffer.hpp)
+                ../src/LatestKBuffer.hpp)
 add_trackermanager_test(test_trackermanager
                 test_trackerManager.cpp
-                ../src/trackManager.cpp)
+                ../src/TrackManager.cpp)
 
 # 注册数据层滚动
 # add_test(NAME latestKbuffer功能测试 COMMAND test_latestBuffer "[LatestKBuffer][]")

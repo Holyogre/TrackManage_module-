@@ -1,5 +1,15 @@
-#include "../src/trackManager.hpp"
-#include "../utils/logger.hpp"
+/*****************************************************************************
+ * @file TrackerManagerDebugger.hpp
+ * @author xjl (xjl20011009@126.com)
+ * @brief 航迹管理器调试辅助模块
+ * @version 0.1
+ * @date 2025-11-29
+ * 
+ * @copyright Copyright (c) 2025
+ * 
+ *****************************************************************************/
+#include "../src/TrackManager.hpp"
+#include "../utils/Logger.hpp"
 #include <iomanip>
 #include <chrono>
 

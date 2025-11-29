@@ -1,3 +1,14 @@
+/*****************************************************************************
+ * @file TrackComm.hpp
+ * @author xjl (xjl20011009@126.com)
+ * @brief 航迹管理器通信模块
+ * 1. 由commondata::Config控制，读取哪个端口的控制命令，执行航迹融合、日志记录
+ * @version 0.1
+ * @date 2025-11-29
+ * 
+ * @copyright Copyright (c) 2025
+ * 
+ *****************************************************************************/
 #ifndef _TRACK_COMM_HPP_
 #define _TRACK_COMM_HPP_
 
@@ -11,6 +22,7 @@
 #include <unistd.h>
 // 线程控制
 #include <thread>
+#include <Logger.hpp>
 
 namespace track_project
 {
@@ -30,8 +42,8 @@ namespace track_project
                 dest_addr_.sin_port = htons(track_dst_port_);
                 inet_pton(AF_INET, track_dst_ip_.c_str(), &dest_addr_.sin_addr);
 
-                // DEBUG信息 TODO，改成日志库输出
-                std::cout << "TrackComm初始化: " << track_dst_ip_ << ":" << track_dst_port_ << std::endl;
+                // 记录初始化信息
+                LOG_DEBUG << "TrackComm初始化: " << track_dst_ip_ << ":" << track_dst_port_ << std::endl;
 
                 // 启动时直接创建socket，避免首次发送延迟
                 create_socket();
@@ -43,7 +55,7 @@ namespace track_project
                 if (sockfd_ >= 0)
                 {
                     close(sockfd_);
-                    std::cout << "TrackComm清理完成" << std::endl;
+                    LOG_DEBUG << "TrackComm清理完成" << std::endl;
                 }
             }
 
@@ -52,7 +64,7 @@ namespace track_project
             {
                 if (data_count == 0)
                 {
-                    std::cout << "空跟踪数据，跳过发送" << std::endl;
+                    LOG_INFO << "空跟踪数据，跳过发送" << std::endl;
                     return true;
                 }
 
@@ -61,11 +73,11 @@ namespace track_project
                                       (struct sockaddr *)&dest_addr_, sizeof(dest_addr_));
                 if (sent == static_cast<ssize_t>(data_count * sizeof(float)))
                 {
-                    std::cout << "跟踪数据发送成功: " << sent << "字节" << std::endl;
+                    LOG_DEBUG << "跟踪数据发送成功: " << sent << "字节" << std::endl;
                     return true;
                 }
 
-                std::cerr << "跟踪数据发送失败(尝试" << strerror(errno) << std::endl;
+                LOG_ERROR << "跟踪数据发送失败(尝试" << strerror(errno) << std::endl;
                 return false;
             }
 
@@ -86,7 +98,7 @@ namespace track_project
                 dest_addr_.sin_port = htons(track_dst_port_);                    // 设置端口号
                 inet_pton(AF_INET, track_dst_ip_.c_str(), &dest_addr_.sin_addr); // 将字符串IP地址转换为二进制格式并存入结构体
 
-                std::cout << "TrackComm重新配置: " << track_dst_ip_ << ":" << track_dst_port_ << std::endl; // TODO改成日志库
+                LOG_DEBUG << "TrackComm重新配置: " << track_dst_ip_ << ":" << track_dst_port_ << std::endl; // TODO改成日志库
             }
 
         private:
@@ -96,11 +108,11 @@ namespace track_project
                 sockfd_ = socket(AF_INET, SOCK_DGRAM, 0);
                 if (sockfd_ < 0)
                 {
-                    std::cerr << "创建socket失败: " << strerror(errno) << std::endl;
+                    LOG_ERROR << "创建socket失败: " << strerror(errno) << std::endl;
                     return false;
                 }
 
-                std::cout << "Socket创建成功" << std::endl; // TODO改成日志库
+                LOG_DEBUG << "Socket创建成功" << std::endl; // TODO改成日志库
                 return true;
             }
 

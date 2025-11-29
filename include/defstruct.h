@@ -29,8 +29,11 @@
 #include <chrono>
 // 结构体控制
 #include <type_traits>
+// 断言
+#include <assert.h>
 // 工具类
 #include "../utils/utils.hpp"
+
 
 namespace track_project
 {
@@ -75,7 +78,7 @@ namespace track_project
         struct Config
         {
             // IP
-            std::string track_dst_ip = "192.168.1.1";   // 航迹发送端IP
+            std::string track_dst_ip = "192.168.1.1";        // 航迹发送端IP
             std::uint16_t track_dst_port = 5555;             // 航迹发送端端口
             std::uint16_t track_manager_control_port = 5556; // 航迹管理器控制端口
             std::uint16_t detected_point_port = 5557;        // 检测点迹接收端口
@@ -87,20 +90,16 @@ namespace track_project
             // 构造
             Config(const std::string &filepath)
             {
-                reload(filepath);
+                load(filepath);
             }
 
             // 重新加载
-            void reload(const std::string &filepath)
+            void load(const std::string &filepath)
             {
                 std::ifstream file(filepath);
 
                 // 错误处理
-                if (!file.is_open())
-                {
-                    std::cerr << "错误：无法打开配置文件 " << filepath << std::endl;
-                    return;
-                }
+                assert(("无法打开配置文件: " + filepath).c_str() && file.is_open());
 
                 std::string line;
                 while (std::getline(file, line))
@@ -128,11 +127,6 @@ namespace track_project
                         longitude = std::stod(value);
 
                     file.close(); // 先关闭文件
-
-                    std::cout << "=== 配置信息 ===\n"
-                              << "航迹接收端ip: " << track_dst_ip << "\n"
-                              << "航迹接收端端口: " << track_dst_port << "\n"
-                              << "坐标: (" << latitude << ", " << longitude << ")\n";
                 }
             }
         };
