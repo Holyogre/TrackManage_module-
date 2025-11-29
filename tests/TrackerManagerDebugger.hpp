@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2025
  * 
  *****************************************************************************/
-#include "../src/TrackManager.hpp"
+#include "../src/TrackerManager.hpp"
 #include "../utils/Logger.hpp"
 #include <iomanip>
 #include <chrono>
@@ -70,7 +70,7 @@ namespace track_project
                 ss << "  使用中: " << manager.getUsedCount() << " 个航迹" << std::endl;
                 ss << "  空闲数: " << manager.getFreeCount() << " 个槽位" << std::endl;
                 ss << "  下个ID: " << manager.next_track_id_ << std::endl;
-                ss << "  点容量: " << manager.max_point_size << " 点/航迹" << std::endl;
+                ss << "  点容量: " << manager.track_length << " 点/航迹" << std::endl;
             }
 
             // 2. 打印内存池详情

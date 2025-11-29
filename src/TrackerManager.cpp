@@ -1,4 +1,4 @@
-#include "TrackManager.hpp"
+#include "TrackerManager.hpp"
 
 namespace track_project::trackermanager
 {
@@ -7,7 +7,7 @@ namespace track_project::trackermanager
     constexpr std::uint32_t MAX_EXTRAPOLATION_TIMES = 3;
 
     // 构造函数：预开辟空间，空间上构造目标
-    TrackerManager::TrackerManager(std::uint32_t track_size, std::uint32_t point_size) : next_track_id_(1), max_point_size(point_size)
+    TrackerManager::TrackerManager(std::uint32_t track_size, std::uint32_t track_length) : next_track_id_(1), track_length(track_length)
     {
 
         // 预分配内存，提高性能
@@ -18,7 +18,7 @@ namespace track_project::trackermanager
         // 初始化内存池
         for (std::uint32_t i = 0; i < track_size; ++i)
         {
-            buffer_pool_.push_back(TrackerContainer(point_size));
+            buffer_pool_.push_back(TrackerContainer(track_length));
             free_slots_.push_back(i);
         }
     }

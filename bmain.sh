@@ -13,7 +13,7 @@ cd build || exit
 
 # 生成构建配置（Debug模式）
 # cmake .. -DCMAKE_BUILD_TYPE=Debug
-cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake .. -DCMAKE_BUILD_TYPE=Release 
 
 # 编译主程序和测试
 make -j$(nproc)

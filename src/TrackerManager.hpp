@@ -68,7 +68,7 @@ namespace track_project
              * @param track_size 航迹容量上限
              * @param point_size 点迹容量上限
              *****************************************************************************/
-            TrackerManager(std::uint32_t track_size = 2000, std::uint32_t point_size = 2000);
+            TrackerManager(std::uint32_t track_size = 2000, std::uint32_t track_length = 2000);
 
             /*****************************************************************************
              * @brief 创建新航迹
@@ -139,7 +139,7 @@ namespace track_project
             }
 
             // 可视化友元
-            friend class TrackerManagerVisualizer;
+            friend class TrackerVisualizer;
             // 测试类专用友元
             friend class TrackerManagerDebugger;
 
@@ -151,8 +151,8 @@ namespace track_project
             std::unordered_map<std::uint32_t, std::uint32_t> track_id_to_pool_index_; // 航迹ID -> 池索引
             std::vector<std::uint32_t> free_slots_;                                   // 空闲槽位索引
 
-            std::uint32_t next_track_id_; // 内部ID自增性，保证唯一性
-            const std::uint32_t max_point_size;
+            std::uint32_t next_track_id_;     // 内部ID自增性，保证唯一性
+            const std::uint32_t track_length; // 每条航迹的点迹容量上限
         };
 
     } // namespace trackermanager

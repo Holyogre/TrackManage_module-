@@ -3,14 +3,14 @@
 此文件描述对 AI 编码助手在本代码库中立即有用的上下文、约定和常见工作流 —— 便于快速实现补丁、修复与单元测试。
 
 1. 项目整体（大局观）
-- **模块划分**: 数据层 `LatestKBuffer`（`src/latestKBuffer.hpp`）→ 管理层 `TrackManager`（`src/trackManager.*`）→ 通信/可视化（`src/TrackComm.hpp`、可选插件）。
+- **模块划分**: 数据层 `LatestKBuffer`（`src/latestKBuffer.hpp`）→ 管理层 `TrackManager`（`src/trackManager.*`）→ 通信/可视化（`src/TrackerComm.hpp`、可选插件）。
 - **设计要点**: `LatestKBuffer` 是固定容量的环形缓冲、禁止拷贝、支持移动；`TrackerManager` 使用内存池（vector pool + free_slots）管理多个轨迹容器，track id 从 1 开始，自增，返回 `0` 表示申请失败。
 
 2. 关键文件与位置（快速定位）
 - `src/latestKBuffer.hpp`: 环形缓冲实现；注意 POD 优化（memcpy）与非POD 安全复制。
 - `src/trackManager.hpp` / `src/trackManager.cpp`: 航迹生命周期（create/delete/merge/push/pack）与内存池策略。
 - `include/defstruct.h`: 对外通信数据结构（TrackPoint / TrackerHeader）。
-- `src/TrackComm.hpp`: UDP 发送实现，构造时会创建 socket，输出目前使用 `std::cout`，TODO 已标记需要改成日志。
+- `src/TrackerComm.hpp`: UDP 发送实现，构造时会创建 socket，输出目前使用 `std::cout`，TODO 已标记需要改成日志。
 - `utils/logger.cpp` 和 `utils/logger.hpp`: 使用 `spdlog` 的工厂单例，日志文件路径当前在代码中硬编码（修改或使用 env 更佳）。
 - `CMakeLists.txt`: 项目构建入口，**关键**：`add_definitions(-DENABLE_SPDLOG)`（开启日志宏），并将 `src`、`utils`、`include` 加入编译路径。
 - `tests/`: 单元与基准测试（Catch2），提供 `TrackerManagerDebugger` 的打印/一致性工具（可在调试补丁时直接复用）。

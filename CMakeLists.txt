@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.15)
-project(Trackermanager LANGUAGES CXX)
+project(TrackManager LANGUAGES CXX)
 
-# 基础配置
+set(CMAKE_C_COMPILER "/usr/bin/gcc")
+set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 set(CMAKE_CXX_STANDARD 17)
 
+# ==================== 配置选项 ====================
 # cmake启动测试的指令，如果不用的话请注释
 enable_testing()  
 
@@ -16,11 +18,49 @@ if(NOT EXISTS ${TRACKMANAGER_DEFAULT_LOG_DIR})
     message(FATAL_ERROR "TRACKMANAGER_DEFAULT_LOG_DIR (${TRACKMANAGER_DEFAULT_LOG_DIR}) 不存在，需要修改")
 endif()
 
-# 将默认日志目录注入编译宏，供运行时回退使用（优先使用环境变量）
+# 将默认日志目录注入编译宏，供运行时回退使用
 add_compile_definitions(TRACKMANAGER_DEFAULT_LOG_DIR=\"${TRACKMANAGER_DEFAULT_LOG_DIR}\")
 
+# ==================== 查找依赖包 ====================
 
-# # 添加编译警告选项
+# 添加线程支持
+find_package(Threads REQUIRED)
+
+# 查找 spdlog
+find_package(spdlog REQUIRED)
+
+# 查找 OpenCV
+find_package(OpenCV REQUIRED)
+
+# ==================== 可执行文件配置 ====================
+
+file(GLOB SOURCES "src/*.cpp")
+file(GLOB MYUTILS "utils/*.cpp")
+add_executable(main
+    main.cpp
+    ${SOURCES}
+    ${MYUTILS}
+)
+
+# 包含目录
+target_include_directories(main PUBLIC 
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/utils
+    ${OpenCV_INCLUDE_DIRS}  # 添加 OpenCV 包含目录
+)
+
+# 链接库
+target_link_libraries(main PUBLIC 
+    spdlog::spdlog 
+    Threads::Threads
+    "${OpenCV_LIBS}"  # 添加 OpenCV 库，推荐加引号防止变量为空时报错
+)
+
+
+
+
+# ==================== 添加编译警告选项 ====================
 # if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 #     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion")
 #     message(STATUS "启用基础警告: -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion")
@@ -46,31 +86,5 @@ add_compile_definitions(TRACKMANAGER_DEFAULT_LOG_DIR=\"${TRACKMANAGER_DEFAULT_LO
 #     message(STATUS "启用等级3警告: 代码质量, 重复代码检测")
 # endif()
 
-
-# 可执行文件配置
-file(GLOB SOURCES "src/*.cpp")
-file(GLOB MYUTILS "utils/*.cpp")
-add_executable(main
-    main.cpp
-    ${SOURCES}
-    ${MYUTILS}
-)
-
-# 包含目录
-target_include_directories(main PRIVATE 
-    ${PROJECT_SOURCE_DIR}/include
-    ${PROJECT_SOURCE_DIR}/src
-    ${PROJECT_SOURCE_DIR}/utils
-)
-
-# 添加线程支持
-find_package(Threads REQUIRED)
-
-# 连接日志库
-find_package(spdlog REQUIRED)
-target_link_libraries(main PRIVATE 
-    spdlog::spdlog 
-    Threads::Threads
-)
 
 add_subdirectory(tests)
