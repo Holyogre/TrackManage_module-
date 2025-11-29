@@ -1,0 +1,44 @@
+name: Format Check Only
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  format-check:
+    name: Code Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: sudo apt-get install -y clang-format
+
+      - name: Check code formatting
+        run: |
+          # 使用项目中的.clang-format配置
+          files=$(find . -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.c' | grep -v build)
+          if [ -z "$files" ]; then
+            echo "No C/C++ files found to check"
+            exit 0
+          fi
+          
+          failed=0
+          for f in $files; do
+            echo "Checking format: $f"
+            clang-format -style=file "$f" > /tmp/formatted
+            if ! cmp -s "$f" /tmp/formatted; then
+              echo "❌ Formatting issue found in: $f"
+              failed=1
+            fi
+          done
+          
+          if [ "$failed" -eq 0 ]; then
+            echo "✅ All files are properly formatted!"
+          else
+            echo "💡 To fix formatting, run: find . -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.c' | xargs clang-format -style=file -i"
+            exit 1
+          fi

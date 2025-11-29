@@ -1,14 +1,24 @@
 cmake_minimum_required(VERSION 3.15)
 project(Trackermanager LANGUAGES CXX)
 
+# 基础配置
+set(CMAKE_CXX_STANDARD 17)
+
 # cmake启动测试的指令，如果不用的话请注释
 enable_testing()  
 
 # 启动日志宏
 add_definitions(-DENABLE_SPDLOG)  # 关键！向编译器传递宏定义
 
-# 基础配置
-set(CMAKE_CXX_STANDARD 17)
+
+# 指定日志目录（编译期），如果没有该路径则配置阶段直接失败
+set(TRACKMANAGER_DEFAULT_LOG_DIR "/home/holyogre/TrackManager/log")
+if(NOT EXISTS ${TRACKMANAGER_DEFAULT_LOG_DIR})
+    message(FATAL_ERROR "TRACKMANAGER_DEFAULT_LOG_DIR (${TRACKMANAGER_DEFAULT_LOG_DIR}) 不存在，需要修改")
+endif()
+
+# 将默认日志目录注入编译宏，供运行时回退使用（优先使用环境变量）
+add_compile_definitions(TRACKMANAGER_DEFAULT_LOG_DIR=\"${TRACKMANAGER_DEFAULT_LOG_DIR}\")
 
 
 # # 添加编译警告选项

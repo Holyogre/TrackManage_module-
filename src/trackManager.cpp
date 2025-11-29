@@ -1,8 +1,7 @@
 #include "trackManager.hpp"
 
-namespace
+namespace track_project::trackermanager
 {
-    using track_project::trackermanager::TrackerManager;
 
     // 定义最大外推次数,当>MAX_EXTRAPOLATION_TIMES时，终结对应航迹
     constexpr std::uint32_t MAX_EXTRAPOLATION_TIMES = 3;

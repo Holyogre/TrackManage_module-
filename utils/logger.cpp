@@ -8,15 +8,16 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <filesystem>
 
 
 class SpdlogLogger : public Logger {
 public:
     SpdlogLogger() {
         try {
-            // 读取路径 ATT这个路径是写死的，如果需要启用日志，记得修改
-            std::string log_dir = "/home/holyogre/TrackManager/log/"; 
-
+            // 日志目录优先从环境变量读取；否则使用 CMake 注入的 TRACKMANAGER_DEFAULT_LOG_DIR
+            std::string log_dir= std::string(TRACKMANAGER_DEFAULT_LOG_DIR);;
+            
             // 生成带日期的文件名
             auto now = std::chrono::system_clock::now();
             std::time_t now_time = std::chrono::system_clock::to_time_t(now);
@@ -26,7 +27,7 @@ public:
             std::string date_str(buffer); 
             
             // 构建日志路径
-            std::string log_path = log_dir + "kalman_" + date_str + ".log";
+            std::string log_path = log_dir + "/kalman_" + date_str + ".log";
             
             // 2. 创建控制台+文件双输出
             auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
@@ -38,6 +39,7 @@ public:
             // 3. 设为全局默认日志器
             spdlog::set_default_logger(logger);
             spdlog::set_pattern("[%Y-%m-%d %H:%M:%S] [%l] %v");
+            spdlog::set_level(spdlog::level::info);
 
         } catch (const spdlog::spdlog_ex& ex) {
             std::cout<<"注意日志文件没有成功输出，检查下文件路径对不对"<<std::endl;
@@ -47,6 +49,7 @@ public:
 
     void debug(const std::string& msg) override { spdlog::debug(msg); }
     void info(const std::string& msg) override { spdlog::info(msg); }
+    void error(const std::string& msg) override { spdlog::error(msg); }
 };
 
 // 工厂方法实现
