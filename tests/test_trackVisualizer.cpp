@@ -31,11 +31,11 @@ TEST_CASE("TrackerVisualizer 基本绘制功能", "[TrackerVisualizer][draw]")
         REQUIRE(manager.isValidTrack(track_id) == true);
 
         // 添加几个测试点
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 100; i++)
         {
             TrackPoint point;
-            point.longitude = 116.3 + i * 0.01; // 向东移动
-            point.latitude = 39.9 + i * 0.005;  // 向北移动
+            point.longitude = 116.1 + i * 0.005; // 向东移动
+            point.latitude = 39.1 + i * 0.005;  // 向北移动
             point.is_associated = true;
             point.time.now();
 
@@ -112,11 +112,15 @@ TEST_CASE("TrackerManager 可视化绘制性能测试", "[TrackerVisualizer][ben
     SECTION("GUI刷新性能测试")
     {
         std::vector<std::tuple<int, int, std::string>> test_cases = {
-            {100, 100, "1万点"},
             {500, 100, "5万点"},
-            {1000, 100, "10万点"},
             {500, 500, "25万点"},
+            {500, 1000, "50万点"},
+            {1000, 100, "10万点"},
             {1000, 500, "50万点"},
+            {1000, 1000, "100万点"},
+            {1500, 100, "15万点"},
+            {1500, 500, "75万点"},
+            {1500, 1000, "150万点"},
         };
 
         for (const auto &[tracks, points, description] : test_cases)
@@ -185,9 +189,6 @@ TEST_CASE("TrackerManager 可视化绘制性能测试", "[TrackerVisualizer][ben
                 time_ms = duration.count() / 1000.0;
 
                 run_times.push_back(time_ms);
-
-                LOG_INFO << "  运行 " << std::setw(2) << (i + 1) << ": "
-                         << std::fixed << std::setprecision(3) << time_ms << " ms" << std::endl;
 
                 // 短暂延迟，避免系统过载
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));

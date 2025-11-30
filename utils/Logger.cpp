@@ -41,7 +41,11 @@ public:
             // 3. 设为全局默认日志器
             spdlog::set_default_logger(logger);
             spdlog::set_pattern("[%Y-%m-%d %H:%M:%S] [%l] %v");
-            spdlog::set_level(spdlog::level::info);
+#ifdef NDEBUG
+            spdlog::set_level(spdlog::level::info); // Release模式
+#else
+            spdlog::set_level(spdlog::level::debug); // Debug模式
+#endif
         }
         catch (const spdlog::spdlog_ex &ex)
         {

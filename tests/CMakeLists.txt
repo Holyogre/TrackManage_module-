@@ -54,4 +54,4 @@ add_trackermanager_test(test_trackVisualizer
 # 注册数据层滚动
 # add_test(NAME latestKbuffer功能测试 COMMAND test_latestBuffer "[LatestKBuffer][]")
 # add_test(NAME trackermanager测试 COMMAND test_trackermanager "[TrackerManager][]")
-add_test(NAME trackVisualizer基本绘制功能测试 COMMAND test_trackVisualizer "[TrackerVisualizer][benchmark]")
+add_test(NAME trackVisualizer基本绘制功能测试 COMMAND test_trackVisualizer "[TrackerVisualizer][draw]")

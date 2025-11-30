@@ -11,8 +11,8 @@
  * @copyright Copyright (c) 2025
  *
  *****************************************************************************/
-#ifndef _TRACK_COMM_HPP_
-#define _TRACK_COMM_HPP_
+#ifndef _TRACKER_COMM_HPP_
+#define _TRACKER_COMM_HPP_
 
 // 内存操作
 #include <cstring>

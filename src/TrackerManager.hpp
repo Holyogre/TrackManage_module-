@@ -13,8 +13,8 @@
  * @copyright Copyright (c) 2025
  *
  *****************************************************************************/
-#ifndef _TRACK_MANAGER_HPP_
-#define _TRACK_MANAGER_HPP_
+#ifndef _TRACKER_MANAGER_HPP_
+#define _TRACKER_MANAGER_HPP_
 
 // 标准库文件
 #include <memory>
