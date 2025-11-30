@@ -68,7 +68,6 @@ namespace track_project
                 ss << std::string(50, '-') << std::endl;
                 ss << "  总容量: " << manager.getTotalCapacity() << " 个航迹" << std::endl;
                 ss << "  使用中: " << manager.getUsedCount() << " 个航迹" << std::endl;
-                ss << "  空闲数: " << manager.getFreeCount() << " 个槽位" << std::endl;
                 ss << "  下个ID: " << manager.next_track_id_ << std::endl;
                 ss << "  点容量: " << manager.track_length << " 点/航迹" << std::endl;
             }

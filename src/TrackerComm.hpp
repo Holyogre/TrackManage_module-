@@ -4,7 +4,7 @@
  * @brief 航迹管理器通信模块
  * 1. 禁止热重载
  * 1. 由commondata::Config控制，读取哪个端口的控制命令，执行航迹融合、日志记录
- * 2. 由commondata::Config控制，将数据发送出去
+ * 2. 由commondata::Config控制，通过接口获取trackermanager的航迹数据，打包为json数据，发送到指定IP和端口
  * @version 0.1
  * @date 2025-11-29
  *

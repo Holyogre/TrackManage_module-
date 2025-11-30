@@ -61,7 +61,7 @@ namespace track_project
                 }
             };
 
-        public:
+        public: // 航迹操作接口
             /*****************************************************************************
              * @brief 构造新的 Tracker Manager 对象
              *
@@ -106,17 +106,6 @@ namespace track_project
             bool merge_tracks(std::uint32_t source_track_id, std::uint32_t target_track_id);
 
             /*****************************************************************************
-             * @brief 拉取航迹数据，塞到发送区
-             *
-             * @warning 需要自行确保缓冲区容量足够！
-             *
-             * @param dest 数据提取的目标区域
-             * @param track_id 航迹ID
-             * @return size_t 偏移Bit数量
-             *****************************************************************************/
-            size_t pack_track(char *buffer, std::uint32_t track_id);
-
-            /*****************************************************************************
              * @brief 清空所有航迹
              *****************************************************************************/
             void clearAll();
@@ -129,17 +118,34 @@ namespace track_project
 
             ~TrackerManager() = default;
 
-            // DEBUG类，获取相关信息，实际能开辟的空间应当以size_t来计算
+        public: // 对外只读接口
+            /*****************************************************************************
+             * @brief 对外接口：获取当前活跃的航迹ID列表（只读）
+             *****************************************************************************/
+            std::vector<std::uint32_t> getActiveTrackIds() const;
+
+            /*****************************************************************************
+             * @brief 返回对航迹头部的只读引用（若不存在返回 nullptr）
+             * 注意：返回的引用在对应航迹被删除或被写改前保持有效。
+             *****************************************************************************/
+            const TrackerHeader *getHeaderRef(std::uint32_t track_id) const;
+
+            /*****************************************************************************
+             * @brief 返回对航迹数据缓冲区的只读引用（若不存在返回 nullptr）
+             * 返回类型为 `const LatestKBuffer<TrackPoint>*`，允许外部直接按索引访问而不拷贝。
+             * 注意生命周期：引用在对应航迹被删除或写改前有效。
+             *****************************************************************************/
+            const LatestKBuffer<TrackPoint> *getDataRef(std::uint32_t track_id) const;
+
+            // 统计信息
             size_t getTotalCapacity() const { return buffer_pool_.size(); }
             size_t getUsedCount() const { return track_id_to_pool_index_.size(); }
-            size_t getFreeCount() const { return free_slots_.size(); }
+            size_t getNextTrackId() const { return next_track_id_; }
             bool isValidTrack(std::uint32_t track_id) const
             {
                 return track_id_to_pool_index_.find(track_id) != track_id_to_pool_index_.end();
             }
 
-            // 可视化友元
-            friend class TrackerVisualizer;
             // 测试类专用友元
             friend class TrackerManagerDebugger;
 

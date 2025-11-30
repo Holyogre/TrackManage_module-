@@ -2,8 +2,7 @@
  * @file TrackerVisualizer.hpp
  * @author xjl (xjl20011009@126.com)
  * @brief 航迹管理器可视化模块
- * 1. 作为TrackerManager的友元，实时显示TrackerManager的航迹信息；因为输出的结构可能会变
- * 这里是为了最小化改动而如此设计的
+ * 1. 通过接口获取trackmanager的航迹信息，从而实时显示TrackerManager的航迹信息
  * 2. 使用OpenCV进行图像绘制，仅用于绘制航迹信息，不存在其他任何信息
  * @version 0.1
  * @date 2025-11-29
@@ -34,12 +33,13 @@ namespace track_project
              * @param lat_max 纬度最大值
              * @param track_length 航迹点长度
              *****************************************************************************/
-            TrackerVisualizer(double lon_min, double lon_max, double lat_min, double lat_max, const int track_length = 2000)
+            TrackerVisualizer(double lon_min, double lon_max, double lat_min, double lat_max, int track_size = 2000, int track_length = 2000)
                 : img(1440, 2560, CV_8UC3, cv::Scalar(255, 255, 255)), // 彩色RGB画布，背景是白色
                   lon_min(lon_min), lon_max(lon_max), lat_min(lat_min), lat_max(lat_max)
             {
                 height = img.rows;
                 width = img.cols;
+                active_track_ids.reserve(track_size);
                 track_points.reserve(track_length);
             };
 
@@ -56,17 +56,24 @@ namespace track_project
             {
                 img.setTo(cv::Scalar(255, 255, 255)); // 清空图像
 
-                for (const auto &[track_id, pool_index] : manager.track_id_to_pool_index_)
+                // 使用公开只读接口获取活跃航迹ID并获取快照，无需访问私有成员
+                std::vector<std::uint32_t> active_ids = manager.getActiveTrackIds();
+
+                for (auto track_id : active_ids)
                 {
-                    //************************异常检查
-                    if (pool_index >= manager.buffer_pool_.size())
+                    using TrackPoint = track_project::communicate::TrackPoint;
+                    using TrackerHeader = track_project::communicate::TrackerHeader;
+
+                    // 使用零拷贝只读引用获取头部和数据
+                    const TrackerHeader *header_ptr = manager.getHeaderRef(track_id);
+                    const LatestKBuffer<TrackPoint> *data_ptr = manager.getDataRef(track_id);
+                    if (!header_ptr || !data_ptr)
                     {
-                        LOG_ERROR << "TrackerVisualizer: 航迹ID" << track_id << "的池索引" << pool_index << "超出范围，跳过该航迹绘制";
+                        LOG_ERROR << "TrackerVisualizer: 无法获取航迹" << track_id << "的只读引用，跳过";
                         continue;
                     }
 
-                    const auto &container = manager.buffer_pool_[pool_index];
-                    if (container.data.empty())
+                    if (data_ptr->size() == 0)
                     {
                         LOG_ERROR << "TrackerVisualizer: 航迹ID" << track_id << "的航迹点为空，跳过该航迹绘制";
                         continue;
@@ -75,9 +82,9 @@ namespace track_project
                     //************************航迹绘制
                     track_points.clear();
                     // 航迹计算，超界点跳过
-                    for (int i = 0; i < container.data.size(); ++i)
+                    for (size_t i = 0; i < data_ptr->size(); ++i)
                     {
-                        const auto &point = container.data[i];
+                        const auto &point = (*data_ptr)[i];
                         cv::Point img_point;
                         img_point.x = static_cast<int>(((point.longitude - lon_min) / (lon_max - lon_min)) * width);
                         img_point.y = static_cast<int>(((lat_max - point.latitude) / (lat_max - lat_min)) * height);
@@ -189,37 +196,38 @@ namespace track_project
                 ss << std::string(50, '-') << std::endl;
                 ss << "  总容量: " << manager.getTotalCapacity() << " 个航迹" << std::endl;
                 ss << "  使用中: " << manager.getUsedCount() << " 个航迹" << std::endl;
-                ss << "  空闲数: " << manager.getFreeCount() << " 个槽位" << std::endl;
-                ss << "  下个ID: " << manager.next_track_id_ << std::endl;
-                ss << "  点容量: " << manager.track_length << " 点/航迹" << std::endl;
+                ss << "  下个ID: " << manager.getNextTrackId() << std::endl;
             }
 
             // 2. 打印内存池详情
             void printMemoryPool(const TrackerManager &manager, std::stringstream &ss)
             {
-                ss << "内存池详情 (" << manager.buffer_pool_.size() << "个槽位):" << std::endl;
+                ss << "内存池详情 (" << manager.getTotalCapacity() << "个槽位):" << std::endl;
                 ss << std::string(50, '-') << std::endl;
 
                 size_t active_count = 0;
-                for (size_t i = 0; i < manager.buffer_pool_.size(); i++)
+                std::vector<std::uint32_t> active_ids = manager.getActiveTrackIds();
+
+                for (auto track_id : active_ids)
                 {
-                    const auto &container = manager.buffer_pool_[i];
-                    if (container.header.track_id != 0)
+                    const track_project::communicate::TrackerHeader *header_ptr = manager.getHeaderRef(track_id);
+                    const LatestKBuffer<track_project::communicate::TrackPoint> *data_ptr = manager.getDataRef(track_id);
+                    if (!header_ptr || !data_ptr)
+                        continue;
+
+                    active_count++;
+                    ss << "  航迹" << std::setw(4) << header_ptr->track_id
+                       << " [状态:" << std::setw(4) << stateToString(header_ptr->state)
+                       << ", 外推:" << std::setw(1) << header_ptr->extrapolation_count
+                       << ", 点数:" << std::setw(3) << data_ptr->size() << "]";
+                    // 显示最近点的时间（如果有）
+                    if (data_ptr->size() > 0)
                     {
-                        active_count++;
-                        ss << "  [" << std::setw(3) << i << "] 航迹" << std::setw(4) << container.header.track_id
-                           << " [状态:" << std::setw(4) << stateToString(container.header.state)
-                           << ", 外推:" << std::setw(1) << container.header.extrapolation_count
-                           << ", 点数:" << std::setw(3) << container.data.size() << "]";
-                        // 显示最近点的时间（如果有）
-                        if (!container.data.empty())
-                        {
-                            const auto &latest_point = container.data[container.data.size() - 1]; 
-                            ss << " 最新时间:" << latest_point.time;
-                        }
-                        ss << std::endl;
-                        ss << std::endl;
+                        const auto &latest_point = (*data_ptr)[data_ptr->size() - 1];
+                        ss << " 最新时间:" << latest_point.time;
                     }
+                    ss << std::endl;
+                    ss << std::endl;
                 }
 
                 if (active_count == 0)
@@ -251,6 +259,7 @@ namespace track_project
             int height, width;                         // 画布高度和宽度
 
             // 航迹点存放空间,为提高速度采用预分配方式，仅被draw_track使用
+            std::vector<std::uint32_t> active_track_ids;
             std::vector<cv::Point> track_points;
         };
 

@@ -20,7 +20,6 @@ TEST_CASE("TrackerManager 构造/析构函数测试", "[TrackerManager][Construc
         TrackerManager manager;
         REQUIRE(manager.getTotalCapacity() == 2000);
         REQUIRE(manager.getUsedCount() == 0);
-        REQUIRE(manager.getFreeCount() == 2000);
     }
 
     SECTION("定制化构造")
@@ -28,7 +27,6 @@ TEST_CASE("TrackerManager 构造/析构函数测试", "[TrackerManager][Construc
         TrackerManager manager(100, 50);
         REQUIRE(manager.getTotalCapacity() == 100);
         REQUIRE(manager.getUsedCount() == 0);
-        REQUIRE(manager.getFreeCount() == 100);
     }
 
     SECTION("析构")
@@ -59,7 +57,6 @@ TEST_CASE("TrackerManager 申请新航迹容器", "[TrackerManager][create]")
         REQUIRE(id2 == 2);
         REQUIRE(id3 == 3);
         REQUIRE(manager.getUsedCount() == 3);
-        REQUIRE(manager.getFreeCount() == 7);
 
         REQUIRE(manager.isValidTrack(id1));
         REQUIRE(manager.isValidTrack(id2));
@@ -75,7 +72,6 @@ TEST_CASE("TrackerManager 申请新航迹容器", "[TrackerManager][create]")
         }
 
         REQUIRE(manager.getUsedCount() == 10);
-        REQUIRE(manager.getFreeCount() == 0);
 
         // Try to create one more
         size_t overflow_id = manager.createTrack();
@@ -194,7 +190,6 @@ TEST_CASE("TrackerManager 删除航迹容器", "[TrackerManager][delete]")
     {
         REQUIRE(manager.deleteTrack(track_id) == true);
         REQUIRE(manager.getUsedCount() == 0);
-        REQUIRE(manager.getFreeCount() == 10);
         REQUIRE(manager.isValidTrack(track_id) == false);
     }
 
@@ -202,7 +197,6 @@ TEST_CASE("TrackerManager 删除航迹容器", "[TrackerManager][delete]")
     {
         REQUIRE(manager.deleteTrack(track_id + 1) == false);
         REQUIRE(manager.getUsedCount() == 1);
-        REQUIRE(manager.getFreeCount() == 9);
     }
 
     SECTION("全航迹清理测试")
@@ -212,12 +206,10 @@ TEST_CASE("TrackerManager 删除航迹容器", "[TrackerManager][delete]")
         manager.createTrack();
         manager.createTrack();
         REQUIRE(manager.getUsedCount() == 4);
-        REQUIRE(manager.getFreeCount() == 6);
 
         manager.clearAll();
 
         REQUIRE(manager.getUsedCount() == 0);
-        REQUIRE(manager.getFreeCount() == 10);
 
         // ID重置确认
         size_t new_id = manager.createTrack();
@@ -293,43 +285,7 @@ TEST_CASE("TrackerManager NUMA性能测试", "[TrackerManager][test_bench_chrono
         // TrackerManagerDebugger::printFullState(manager);
     }
 
-    SECTION("核心场景3: 满载打包性能")
-    {
-        TrackerManager manager(TRACK_COUNT, POINTS_PER_TRACK);
-        auto buffer = std::make_unique<char[]>(BUFFER_SIZE);
-
-        // 创建并填充所有航迹
-        std::vector<std::uint32_t> track_ids;
-        for (std::uint32_t i = 0; i < TRACK_COUNT; ++i)
-        {
-            std::uint32_t id = manager.createTrack();
-            if (id != 0)
-            {
-                track_ids.push_back(id);
-                for (std::uint32_t j = 0; j < POINTS_PER_TRACK; ++j)
-                {
-                    manager.push_track_point(id, point);
-                }
-            }
-        }
-
-        auto duration = run_benchmark("打包2000个满载航迹", [&]()
-                                      {
-                                          size_t total_bytes = 0;
-                                          for (std::uint32_t track_id : track_ids)
-                                          {
-                                              total_bytes += manager.pack_track(buffer.get(), track_id);
-                                          }
-                                          volatile size_t dummy = total_bytes; // 阻止优化
-                                      });
-
-        // 计算读取带宽
-        size_t total_data = TRACK_COUNT * (sizeof(TrackerHeader) + POINTS_PER_TRACK * sizeof(TrackPoint));
-        double read_bandwidth = total_data / (duration.count() / 1000000.0); // bytes/s
-        std::cout << "打包带宽: " << read_bandwidth / (1024 * 1024 * 1024) << " GB/s" << std::endl;
-    }
-
-    SECTION("核心场景4: 航迹删除性能")
+    SECTION("核心场景3: 航迹删除性能")
     {
         TrackerManager manager(TRACK_COUNT, POINTS_PER_TRACK);
 
@@ -415,42 +371,7 @@ TEST_CASE("TrackerManager 核心性能测试", "[TrackerManager][benchmark]")
         };
     }
 
-    SECTION("核心场景3: 满载打包性能")
-    {
-        TrackerManager manager(TRACK_COUNT, POINTS_PER_TRACK);
-        auto buffer = std::make_unique<char[]>(BUFFER_SIZE);
-
-        // 创建并填充所有航迹
-        std::vector<std::uint32_t> track_ids;
-        for (std::uint32_t i = 0; i < TRACK_COUNT; ++i)
-        {
-            std::uint32_t id = manager.createTrack();
-            if (id != 0)
-            {
-                track_ids.push_back(id);
-                for (std::uint32_t j = 0; j < POINTS_PER_TRACK; ++j)
-                {
-                    manager.push_track_point(id, point);
-                }
-            }
-        }
-
-        BENCHMARK("打包2000个满载航迹")
-        {
-            size_t total_bytes = 0;
-            for (std::uint32_t track_id : track_ids)
-            {
-                total_bytes += manager.pack_track(buffer.get(), track_id);
-            }
-            volatile size_t dummy = total_bytes;
-        };
-
-        // 计算数据总量用于参考
-        size_t total_data = TRACK_COUNT * (sizeof(TrackerHeader) + POINTS_PER_TRACK * sizeof(TrackPoint));
-        std::cout << "总数据量: " << total_data / (1024 * 1024) << " MB" << std::endl;
-    }
-
-    SECTION("核心场景4: 航迹删除性能")
+    SECTION("核心场景3: 航迹删除性能")
     {
         TrackerManager manager(TRACK_COUNT, POINTS_PER_TRACK);
 

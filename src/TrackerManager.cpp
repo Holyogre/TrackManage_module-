@@ -100,7 +100,7 @@ namespace track_project::trackermanager
 
         // 数据处理
         track.header.point_num = static_cast<std::uint32_t>(track.data.size()); // 更新点迹数量
-        if (point.is_associated)                                           // 关联点继续
+        if (point.is_associated)                                                // 关联点继续
         {
             if (track.header.extrapolation_count > 0)
             {
@@ -164,31 +164,6 @@ namespace track_project::trackermanager
         return true;
     }
 
-    // 获取完整航迹信息到指定缓冲区，头为完全自包含数据块，数据区域调用存储容器的拷贝函数，返回内存偏移量
-    size_t TrackerManager::pack_track(char *buffer, std::uint32_t track_id)
-    {
-        // ID号
-        auto it = track_id_to_pool_index_.find(track_id);
-
-        // 异常处理
-        if (it == track_id_to_pool_index_.end())
-        {
-            return 0; // 航迹不存在
-        }
-
-        // 获取对应航迹
-        TrackerContainer &track = buffer_pool_[it->second];
-
-        std::memcpy(buffer, &track.header, sizeof(TrackerHeader));
-
-        std::uint32_t max_points = static_cast<std::uint32_t>(track.data.size());
-        size_t copied = track.data.copyTo(
-            reinterpret_cast<TrackPoint *>(buffer + sizeof(TrackerHeader)),
-            max_points);
-
-        return sizeof(TrackerHeader) + copied * sizeof(TrackPoint);
-    }
-
     // 重置整个缓冲区,所有内存池改为空弦状态，重置内存编号
     void TrackerManager::clearAll()
     {
@@ -207,5 +182,36 @@ namespace track_project::trackermanager
         }
 
         next_track_id_ = 1;
+    }
+
+    // 获取活跃的航迹号,返回一个包含所有活跃航迹ID的向量
+    std::vector<std::uint32_t> TrackerManager::getActiveTrackIds() const
+    {
+        std::vector<std::uint32_t> active_ids;
+        active_ids.reserve(track_id_to_pool_index_.size());
+        for (const auto &pair : track_id_to_pool_index_)
+        {
+            active_ids.push_back(pair.first);
+        }
+        return active_ids;
+    }
+    // 获取id对应的航迹头部只读引用，若不存在返回nullptr
+    const TrackerManager::TrackerHeader *TrackerManager::getHeaderRef(std::uint32_t track_id) const
+    {
+        auto it = track_id_to_pool_index_.find(track_id);
+        if (it == track_id_to_pool_index_.end())
+            return nullptr;
+        const TrackerContainer &track = buffer_pool_[it->second];
+        return &track.header;
+    }
+
+    // 获取id对应的航迹数据只读引用，若不存在返回nullptr
+    const LatestKBuffer<TrackerManager::TrackPoint> *TrackerManager::getDataRef(std::uint32_t track_id) const
+    {
+        auto it = track_id_to_pool_index_.find(track_id);
+        if (it == track_id_to_pool_index_.end())
+            return nullptr;
+        const TrackerContainer &track = buffer_pool_[it->second];
+        return &track.data;
     }
 }
