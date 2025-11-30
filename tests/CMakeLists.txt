@@ -49,6 +49,7 @@ add_trackermanager_test(test_trackermanager
 add_trackermanager_test(test_trackVisualizer
                 test_trackVisualizer.cpp            
                 ../src/TrackerManager.cpp
+                ../src/TrackerVisualizer.cpp
                 ../src/TrackerVisualizer.hpp) 
 
 # 注册数据层滚动

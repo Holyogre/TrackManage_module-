@@ -17,7 +17,7 @@
    - 测试代码 [`tests`](./tests/)
    - 自动构建脚本 [`bmain.sh`](./bmain.sh)：
 3. **代码结构**
-4. - 泛型环形存储容器： **latestKbuffer\<T\>**
+   - 泛型环形存储容器： **latestKbuffer\<T\>**
      - 循环存储，自动覆盖旧数据；能定点修改航迹点
    - 航迹管理组件：**TrackerManager**
      - 航迹记录（数据层）、终结管理；事务管理；

@@ -31,106 +31,44 @@
 #include <type_traits>
 // 断言
 #include <assert.h>
-// 工具类
-#include "../utils/utils.hpp"
-
 
 namespace track_project
 {
     /*****************************************************************************
      * @brief 通用结构
      *****************************************************************************/
-    namespace commondata
+
+    // 时间戳结构（毫秒精度）
+    struct Timestamp
     {
-        // 时间戳结构（毫秒精度）
-        struct Timestamp
+        int64_t milliseconds; // 从1970-01-01开始的毫秒数
+
+        Timestamp()
         {
-            int64_t milliseconds; // 从1970-01-01开始的毫秒数
+            auto now = std::chrono::system_clock::now();
+            milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(
+                               now.time_since_epoch())
+                               .count();
+        }
 
-            Timestamp()
-            {
-                auto now = std::chrono::system_clock::now();
-                milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(
-                                   now.time_since_epoch())
-                                   .count();
-            }
-
-            // 静态函数：获取当前时间戳
-            static Timestamp now()
-            {
-                return Timestamp(); // 直接调用构造函数创建当前时间戳
-            }
-
-            // 重载 << 操作符用于调试输出
-            friend std::ostream &operator<<(std::ostream &os, const Timestamp &ts)
-            {
-                time_t seconds = ts.milliseconds / 1000;
-                int64_t ms = ts.milliseconds % 1000;
-
-                std::tm tm_info = *std::localtime(&seconds);
-                os << std::put_time(&tm_info, "%Y-%m-%d %H:%M:%S")
-                   << "." << std::setfill('0') << std::setw(3) << ms;
-                return os;
-            }
-        };
-
-        // 配置项结构体，皆为可反复修改的参数，初始化配置项编译期间确定，在CMAKE里面
-        struct Config
+        // 静态函数：获取当前时间戳
+        static Timestamp now()
         {
-            // IP
-            std::string track_dst_ip = "192.168.1.1";        // 航迹发送端IP
-            std::uint16_t track_dst_port = 5555;             // 航迹发送端端口
-            std::uint16_t track_manager_control_port = 5556; // 航迹管理器控制端口
-            std::uint16_t detected_point_port = 5557;        // 检测点迹接收端口
+            return Timestamp(); // 直接调用构造函数创建当前时间戳
+        }
 
-            // 具体参数
-            double latitude = 0.0;  // 纬度
-            double longitude = 0.0; // 经度
+        // 重载 << 操作符用于调试输出
+        friend std::ostream &operator<<(std::ostream &os, const Timestamp &ts)
+        {
+            time_t seconds = ts.milliseconds / 1000;
+            int64_t ms = ts.milliseconds % 1000;
 
-            // 构造
-            Config(const std::string &filepath)
-            {
-                load(filepath);
-            }
-
-            // 重新加载
-            void load(const std::string &filepath)
-            {
-                std::ifstream file(filepath);
-
-                // 错误处理
-                assert(("无法打开配置文件: " + filepath).c_str() && file.is_open());
-
-                std::string line;
-                while (std::getline(file, line))
-                {
-                    utils::trim(line);
-                    if (line.empty() || line[0] == '#')
-                        continue;
-
-                    size_t eqPos = line.find('=');
-                    if (eqPos == std::string::npos)
-                        continue;
-
-                    std::string key = line.substr(0, eqPos);
-                    std::string value = line.substr(eqPos + 1);
-                    utils::trim(key);
-                    utils::trim(value);
-
-                    if (key == "TRACK_DST_IP")
-                        track_dst_ip = value;
-                    else if (key == "TRACK_DST_PORT")
-                        track_dst_port = std::stoi(value);
-                    else if (key == "LATITUDE")
-                        latitude = std::stod(value);
-                    else if (key == "LONGITUDE")
-                        longitude = std::stod(value);
-
-                    file.close(); // 先关闭文件
-                }
-            }
-        };
-    } //  namespace commondata
+            std::tm tm_info = *std::localtime(&seconds);
+            os << std::put_time(&tm_info, "%Y-%m-%d %H:%M:%S")
+               << "." << std::setfill('0') << std::setw(3) << ms;
+            return os;
+        }
+    };
 
     /*****************************************************************************
      * @brief 流水线架构：TrackingBuffer，计划设计为环形缓冲区结构体
@@ -155,7 +93,7 @@ namespace track_project
         {
             std::uint32_t batch_id;
             int point_num;
-            commondata::Timestamp time;
+            Timestamp time;
 
             // 可变拓展
             double base_longitude;
@@ -275,7 +213,7 @@ namespace track_project
     } // namespace pipeline
 
     /*****************************************************************************
-     * @brief 通信结构，内存有序排列，方便定长数据读取
+     * @brief 通信结构，内存有序排列，方便定长数据读取 //TODO准备把这个结构体移动到trackmanager里面去
      *****************************************************************************/
     namespace communicate
     {
@@ -328,7 +266,7 @@ namespace track_project
             double distance; // 雷达观测距离，距离雷达站距离，km
 
             bool is_associated; // 是否关联
-            commondata::Timestamp time;
+            Timestamp time;
 
             // 重载 << 操作符用于调试输出
             friend std::ostream &operator<<(std::ostream &os, const TrackPoint &point)

@@ -27,141 +27,138 @@
 
 // 数据结构
 #include "LatestKBuffer.hpp"
-namespace track_project
+namespace track_project::trackermanager
 {
-    namespace trackermanager
+
+    /***************************************航迹管理类***************************************/
+    class TrackerManager
     {
+        // 引入通信结构体
+        using TrackPoint = track_project::communicate::TrackPoint;
+        using TrackerHeader = track_project::communicate::TrackerHeader;
 
-        /***************************************航迹管理类***************************************/
-        class TrackerManager
+        // 航迹基础结构
+        struct TrackerContainer
         {
-            // 引入通信结构体
-            using TrackPoint = track_project::communicate::TrackPoint;
-            using TrackerHeader = track_project::communicate::TrackerHeader;
+            TrackerHeader header; // 内存连续且平凡
 
-            // 航迹基础结构
-            struct TrackerContainer
+            LatestKBuffer<TrackPoint> data;
+
+            TrackerContainer(std::uint32_t point_size) : data(point_size) {}
+
+            void clear()
             {
-                TrackerHeader header; // 内存连续且平凡
-
-                LatestKBuffer<TrackPoint> data;
-
-                TrackerContainer(std::uint32_t point_size) : data(point_size) {}
-
-                void clear()
-                {
-                    header.clear();
-                    data.clear();
-                }
-
-                friend std::ostream &operator<<(std::ostream &os, const TrackerContainer &troj)
-                {
-                    os << "TrackerContainer= [" << troj.header << troj.data << "]";
-                    return os;
-                }
-            };
-
-        public: // 航迹操作接口
-            /*****************************************************************************
-             * @brief 构造新的 Tracker Manager 对象
-             *
-             * @param track_size 航迹容量上限
-             * @param point_size 点迹容量上限
-             *****************************************************************************/
-            TrackerManager(std::uint32_t track_size = 2000, std::uint32_t track_length = 2000);
-
-            /*****************************************************************************
-             * @brief 创建新航迹
-             *
-             * @return 航迹ID，如果内存池已满返回0
-             *****************************************************************************/
-            std::uint32_t createTrack();
-
-            /*****************************************************************************
-             * @brief 删除航迹
-             *
-             * @param track_id 要删除的航迹ID
-             * @return 是否成功删除
-             *****************************************************************************/
-            bool deleteTrack(std::uint32_t track_id);
-
-            /*****************************************************************************
-             * @brief 往对应的航迹中存入一个点迹，返回为FALSE的时候需要把对应的航迹给删除了
-             *
-             * @param track_id
-             * @return true 存放航迹点成功
-             * @return false 返回FALSE的时候，表明该容器内已经不再有该ID对应的航迹了，所有流水线需要逐级删除这个航迹
-             *****************************************************************************/
-            bool push_track_point(std::uint32_t track_id, TrackPoint point);
-
-            /*****************************************************************************
-             * @brief 将两条航迹合并（将源航迹数据追加到目标航迹），然后以源航迹的ID号存活下去
-             *
-             * @param source_track_id 源航迹ID（将被删除），新航迹
-             * @param target_track_id 目标航迹ID（保留并接收数据），原本将消亡的航迹
-             * @return bool 合并是否成功
-             *
-             * @note 适用于人工判定两条中断航迹实为同一目标的情况
-             *****************************************************************************/
-            bool merge_tracks(std::uint32_t source_track_id, std::uint32_t target_track_id);
-
-            /*****************************************************************************
-             * @brief 清空所有航迹
-             *****************************************************************************/
-            void clearAll();
-
-            // 唯一存在的流水线组件，禁止拷贝，移动
-            TrackerManager(const TrackerManager &) = delete;
-            TrackerManager &operator=(const TrackerManager &) = delete;
-            TrackerManager(TrackerManager &&) = delete;
-            TrackerManager &operator=(TrackerManager &&) = delete;
-
-            ~TrackerManager() = default;
-
-        public: // 对外只读接口
-            /*****************************************************************************
-             * @brief 对外接口：获取当前活跃的航迹ID列表（只读）
-             *****************************************************************************/
-            std::vector<std::uint32_t> getActiveTrackIds() const;
-
-            /*****************************************************************************
-             * @brief 返回对航迹头部的只读引用（若不存在返回 nullptr）
-             * 注意：返回的引用在对应航迹被删除或被写改前保持有效。
-             *****************************************************************************/
-            const TrackerHeader *getHeaderRef(std::uint32_t track_id) const;
-
-            /*****************************************************************************
-             * @brief 返回对航迹数据缓冲区的只读引用（若不存在返回 nullptr）
-             * 返回类型为 `const LatestKBuffer<TrackPoint>*`，允许外部直接按索引访问而不拷贝。
-             * 注意生命周期：引用在对应航迹被删除或写改前有效。
-             *****************************************************************************/
-            const LatestKBuffer<TrackPoint> *getDataRef(std::uint32_t track_id) const;
-
-            // 统计信息
-            size_t getTotalCapacity() const { return buffer_pool_.size(); }
-            size_t getUsedCount() const { return track_id_to_pool_index_.size(); }
-            size_t getNextTrackId() const { return next_track_id_; }
-            bool isValidTrack(std::uint32_t track_id) const
-            {
-                return track_id_to_pool_index_.find(track_id) != track_id_to_pool_index_.end();
+                header.clear();
+                data.clear();
             }
 
-            // 测试类专用友元
-            friend class TrackerManagerDebugger;
-
-        private:
-            // 内存池
-            std::vector<TrackerContainer> buffer_pool_;
-
-            // 管理数据结构
-            std::unordered_map<std::uint32_t, std::uint32_t> track_id_to_pool_index_; // 航迹ID -> 池索引
-            std::vector<std::uint32_t> free_slots_;                                   // 空闲槽位索引
-
-            std::uint32_t next_track_id_;     // 内部ID自增性，保证唯一性
-            const std::uint32_t track_length; // 每条航迹的点迹容量上限
+            friend std::ostream &operator<<(std::ostream &os, const TrackerContainer &troj)
+            {
+                os << "TrackerContainer= [" << troj.header << troj.data << "]";
+                return os;
+            }
         };
 
-    } // namespace trackermanager
-} // namespace track_project
+    public: // 航迹操作接口
+        /*****************************************************************************
+         * @brief 构造新的 Tracker Manager 对象
+         *
+         * @param track_size 航迹容量上限
+         * @param point_size 点迹容量上限
+         *****************************************************************************/
+        TrackerManager(std::uint32_t track_size = 2000, std::uint32_t track_length = 2000);
+
+        /*****************************************************************************
+         * @brief 创建新航迹
+         *
+         * @return 航迹ID，如果内存池已满返回0
+         *****************************************************************************/
+        std::uint32_t createTrack();
+
+        /*****************************************************************************
+         * @brief 删除航迹
+         *
+         * @param track_id 要删除的航迹ID
+         * @return 是否成功删除
+         *****************************************************************************/
+        bool deleteTrack(std::uint32_t track_id);
+
+        /*****************************************************************************
+         * @brief 往对应的航迹中存入一个点迹，返回为FALSE的时候需要把对应的航迹给删除了
+         *
+         * @param track_id
+         * @return true 存放航迹点成功
+         * @return false 返回FALSE的时候，表明该容器内已经不再有该ID对应的航迹了，所有流水线需要逐级删除这个航迹
+         *****************************************************************************/
+        bool push_track_point(std::uint32_t track_id, TrackPoint point);
+
+        /*****************************************************************************
+         * @brief 将两条航迹合并（将源航迹数据追加到目标航迹），然后以源航迹的ID号存活下去
+         *
+         * @param source_track_id 源航迹ID（将被删除），新航迹
+         * @param target_track_id 目标航迹ID（保留并接收数据），原本将消亡的航迹
+         * @return bool 合并是否成功
+         *
+         * @note 适用于人工判定两条中断航迹实为同一目标的情况
+         *****************************************************************************/
+        bool merge_tracks(std::uint32_t source_track_id, std::uint32_t target_track_id);
+
+        /*****************************************************************************
+         * @brief 清空所有航迹
+         *****************************************************************************/
+        void clearAll();
+
+        // 唯一存在的流水线组件，禁止拷贝，移动
+        TrackerManager(const TrackerManager &) = delete;
+        TrackerManager &operator=(const TrackerManager &) = delete;
+        TrackerManager(TrackerManager &&) = delete;
+        TrackerManager &operator=(TrackerManager &&) = delete;
+
+        ~TrackerManager() = default;
+
+    public: // 对外只读接口
+        /*****************************************************************************
+         * @brief 对外接口：获取当前活跃的航迹ID列表（只读）
+         *****************************************************************************/
+        std::vector<std::uint32_t> getActiveTrackIds() const;
+
+        /*****************************************************************************
+         * @brief 返回对航迹头部的只读引用（若不存在返回 nullptr）
+         * 注意：返回的引用在对应航迹被删除或被写改前保持有效。
+         *****************************************************************************/
+        const TrackerHeader *getHeaderRef(std::uint32_t track_id) const;
+
+        /*****************************************************************************
+         * @brief 返回对航迹数据缓冲区的只读引用（若不存在返回 nullptr）
+         * 返回类型为 `const LatestKBuffer<TrackPoint>*`，允许外部直接按索引访问而不拷贝。
+         * 注意生命周期：引用在对应航迹被删除或写改前有效。
+         *****************************************************************************/
+        const LatestKBuffer<TrackPoint> *getDataRef(std::uint32_t track_id) const;
+
+        // 统计信息
+        size_t getTotalCapacity() const { return buffer_pool_.size(); }
+        size_t getUsedCount() const { return track_id_to_pool_index_.size(); }
+        size_t getNextTrackId() const { return next_track_id_; }
+        bool isValidTrack(std::uint32_t track_id) const
+        {
+            return track_id_to_pool_index_.find(track_id) != track_id_to_pool_index_.end();
+        }
+
+        // 测试类专用友元
+        friend class TrackerManagerDebugger;
+
+    private:
+        // 内存池
+        std::vector<TrackerContainer> buffer_pool_;
+
+        // 管理数据结构
+        std::unordered_map<std::uint32_t, std::uint32_t> track_id_to_pool_index_; // 航迹ID -> 池索引
+        std::vector<std::uint32_t> free_slots_;                                   // 空闲槽位索引
+
+        std::uint32_t next_track_id_;     // 内部ID自增性，保证唯一性
+        const std::uint32_t track_length; // 每条航迹的点迹容量上限
+    };
+
+} // namespace track_project::trackermanager
 
 #endif

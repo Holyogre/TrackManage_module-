@@ -9,7 +9,6 @@
 #include <thread>
 
 using namespace track_project::trackermanager;
-using namespace track_project::commondata;
 using namespace track_project::communicate;
 
 TEST_CASE("TrackerVisualizer 基本绘制功能", "[TrackerVisualizer][draw]")
@@ -35,7 +34,7 @@ TEST_CASE("TrackerVisualizer 基本绘制功能", "[TrackerVisualizer][draw]")
         {
             TrackPoint point;
             point.longitude = 116.1 + i * 0.005; // 向东移动
-            point.latitude = 39.1 + i * 0.005;  // 向北移动
+            point.latitude = 39.1 + i * 0.005;   // 向北移动
             point.is_associated = true;
             point.time.now();
 
@@ -107,7 +106,7 @@ TEST_CASE("TrackerManager 可视化绘制性能测试", "[TrackerVisualizer][ben
     base_point.angle = 30.0;
     base_point.distance = 1000.0;
     base_point.is_associated = true;
-    base_point.time = Timestamp::now();
+    base_point.time = track_project::Timestamp::now();
 
     SECTION("GUI刷新性能测试")
     {
