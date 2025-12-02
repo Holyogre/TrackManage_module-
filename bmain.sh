@@ -12,10 +12,11 @@ mkdir -p build
 cd build || exit
 
 # 生成构建配置（Debug模式）
-cmake .. -DCMAKE_BUILD_TYPE=Debug
+cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 .. -DCMAKE_BUILD_TYPE=Debug
 # cmake .. -DCMAKE_BUILD_TYPE=Release 
 
 # 编译主程序和测试
+cp compile_commands.json ..
 make -j$(nproc)
 
 # 运行测试

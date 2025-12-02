@@ -1,0 +1,67 @@
+[
+{
+  "directory": "/home/holyogre/TrackManager/build",
+  "command": "/usr/bin/g++  -DENABLE_SPDLOG -DSPDLOG_COMPILED_LIB -DTRACKMANAGER_DEFAULT_LOG_DIR=\\\"/home/holyogre/TrackManager/log\\\" -I/home/holyogre/TrackManager/include -I/home/holyogre/TrackManager/src -I/home/holyogre/TrackManager/utils -isystem /usr/local/include/opencv4  -g   -std=c++17 -o CMakeFiles/main.dir/main.cpp.o -c /home/holyogre/TrackManager/main.cpp",
+  "file": "/home/holyogre/TrackManager/main.cpp"
+},
+{
+  "directory": "/home/holyogre/TrackManager/build",
+  "command": "/usr/bin/g++  -DENABLE_SPDLOG -DSPDLOG_COMPILED_LIB -DTRACKMANAGER_DEFAULT_LOG_DIR=\\\"/home/holyogre/TrackManager/log\\\" -I/home/holyogre/TrackManager/include -I/home/holyogre/TrackManager/src -I/home/holyogre/TrackManager/utils -isystem /usr/local/include/opencv4  -g   -std=c++17 -o CMakeFiles/main.dir/src/TrackerManager.cpp.o -c /home/holyogre/TrackManager/src/TrackerManager.cpp",
+  "file": "/home/holyogre/TrackManager/src/TrackerManager.cpp"
+},
+{
+  "directory": "/home/holyogre/TrackManager/build",
+  "command": "/usr/bin/g++  -DENABLE_SPDLOG -DSPDLOG_COMPILED_LIB -DTRACKMANAGER_DEFAULT_LOG_DIR=\\\"/home/holyogre/TrackManager/log\\\" -I/home/holyogre/TrackManager/include -I/home/holyogre/TrackManager/src -I/home/holyogre/TrackManager/utils -isystem /usr/local/include/opencv4  -g   -std=c++17 -o CMakeFiles/main.dir/src/TrackerVisualizer.cpp.o -c /home/holyogre/TrackManager/src/TrackerVisualizer.cpp",
+  "file": "/home/holyogre/TrackManager/src/TrackerVisualizer.cpp"
+},
+{
+  "directory": "/home/holyogre/TrackManager/build",
+  "command": "/usr/bin/g++  -DENABLE_SPDLOG -DSPDLOG_COMPILED_LIB -DTRACKMANAGER_DEFAULT_LOG_DIR=\\\"/home/holyogre/TrackManager/log\\\" -I/home/holyogre/TrackManager/include -I/home/holyogre/TrackManager/src -I/home/holyogre/TrackManager/utils -isystem /usr/local/include/opencv4  -g   -std=c++17 -o CMakeFiles/main.dir/utils/Logger.cpp.o -c /home/holyogre/TrackManager/utils/Logger.cpp",
+  "file": "/home/holyogre/TrackManager/utils/Logger.cpp"
+},
+{
+  "directory": "/home/holyogre/TrackManager/build/tests",
+  "command": "/usr/bin/g++  -DENABLE_SPDLOG -DSPDLOG_COMPILED_LIB -DTRACKMANAGER_DEFAULT_LOG_DIR=\\\"/home/holyogre/TrackManager/log\\\" -I/home/holyogre/TrackManager/src -I/home/holyogre/TrackManager/utils -I/home/holyogre/TrackManager/include -isystem /usr/local/include/opencv4  -g   -fsanitize=address -fno-omit-frame-pointer -std=c++17 -o CMakeFiles/test_trackVisualizer.dir/test_trackVisualizer.cpp.o -c /home/holyogre/TrackManager/tests/test_trackVisualizer.cpp",
+  "file": "/home/holyogre/TrackManager/tests/test_trackVisualizer.cpp"
+},
+{
+  "directory": "/home/holyogre/TrackManager/build/tests",
+  "command": "/usr/bin/g++  -DENABLE_SPDLOG -DSPDLOG_COMPILED_LIB -DTRACKMANAGER_DEFAULT_LOG_DIR=\\\"/home/holyogre/TrackManager/log\\\" -I/home/holyogre/TrackManager/src -I/home/holyogre/TrackManager/utils -I/home/holyogre/TrackManager/include -isystem /usr/local/include/opencv4  -g   -fsanitize=address -fno-omit-frame-pointer -std=c++17 -o CMakeFiles/test_trackVisualizer.dir/__/src/TrackerManager.cpp.o -c /home/holyogre/TrackManager/src/TrackerManager.cpp",
+  "file": "/home/holyogre/TrackManager/src/TrackerManager.cpp"
+},
+{
+  "directory": "/home/holyogre/TrackManager/build/tests",
+  "command": "/usr/bin/g++  -DENABLE_SPDLOG -DSPDLOG_COMPILED_LIB -DTRACKMANAGER_DEFAULT_LOG_DIR=\\\"/home/holyogre/TrackManager/log\\\" -I/home/holyogre/TrackManager/src -I/home/holyogre/TrackManager/utils -I/home/holyogre/TrackManager/include -isystem /usr/local/include/opencv4  -g   -fsanitize=address -fno-omit-frame-pointer -std=c++17 -o CMakeFiles/test_trackVisualizer.dir/__/src/TrackerVisualizer.cpp.o -c /home/holyogre/TrackManager/src/TrackerVisualizer.cpp",
+  "file": "/home/holyogre/TrackManager/src/TrackerVisualizer.cpp"
+},
+{
+  "directory": "/home/holyogre/TrackManager/build/tests",
+  "command": "/usr/bin/g++  -DENABLE_SPDLOG -DSPDLOG_COMPILED_LIB -DTRACKMANAGER_DEFAULT_LOG_DIR=\\\"/home/holyogre/TrackManager/log\\\" -I/home/holyogre/TrackManager/src -I/home/holyogre/TrackManager/utils -I/home/holyogre/TrackManager/include -isystem /usr/local/include/opencv4  -g   -fsanitize=address -fno-omit-frame-pointer -std=c++17 -o CMakeFiles/test_trackVisualizer.dir/__/utils/Logger.cpp.o -c /home/holyogre/TrackManager/utils/Logger.cpp",
+  "file": "/home/holyogre/TrackManager/utils/Logger.cpp"
+},
+{
+  "directory": "/home/holyogre/TrackManager/build/tests",
+  "command": "/usr/bin/g++  -DENABLE_SPDLOG -DSPDLOG_COMPILED_LIB -DTRACKMANAGER_DEFAULT_LOG_DIR=\\\"/home/holyogre/TrackManager/log\\\" -I/home/holyogre/TrackManager/src -I/home/holyogre/TrackManager/utils -I/home/holyogre/TrackManager/include -isystem /usr/local/include/opencv4  -g   -fsanitize=address -fno-omit-frame-pointer -std=c++17 -o CMakeFiles/test_trackermanager.dir/test_trackerManager.cpp.o -c /home/holyogre/TrackManager/tests/test_trackerManager.cpp",
+  "file": "/home/holyogre/TrackManager/tests/test_trackerManager.cpp"
+},
+{
+  "directory": "/home/holyogre/TrackManager/build/tests",
+  "command": "/usr/bin/g++  -DENABLE_SPDLOG -DSPDLOG_COMPILED_LIB -DTRACKMANAGER_DEFAULT_LOG_DIR=\\\"/home/holyogre/TrackManager/log\\\" -I/home/holyogre/TrackManager/src -I/home/holyogre/TrackManager/utils -I/home/holyogre/TrackManager/include -isystem /usr/local/include/opencv4  -g   -fsanitize=address -fno-omit-frame-pointer -std=c++17 -o CMakeFiles/test_trackermanager.dir/__/src/TrackerManager.cpp.o -c /home/holyogre/TrackManager/src/TrackerManager.cpp",
+  "file": "/home/holyogre/TrackManager/src/TrackerManager.cpp"
+},
+{
+  "directory": "/home/holyogre/TrackManager/build/tests",
+  "command": "/usr/bin/g++  -DENABLE_SPDLOG -DSPDLOG_COMPILED_LIB -DTRACKMANAGER_DEFAULT_LOG_DIR=\\\"/home/holyogre/TrackManager/log\\\" -I/home/holyogre/TrackManager/src -I/home/holyogre/TrackManager/utils -I/home/holyogre/TrackManager/include -isystem /usr/local/include/opencv4  -g   -fsanitize=address -fno-omit-frame-pointer -std=c++17 -o CMakeFiles/test_trackermanager.dir/__/utils/Logger.cpp.o -c /home/holyogre/TrackManager/utils/Logger.cpp",
+  "file": "/home/holyogre/TrackManager/utils/Logger.cpp"
+},
+{
+  "directory": "/home/holyogre/TrackManager/build/tests",
+  "command": "/usr/bin/g++  -DENABLE_SPDLOG -DSPDLOG_COMPILED_LIB -DTRACKMANAGER_DEFAULT_LOG_DIR=\\\"/home/holyogre/TrackManager/log\\\" -I/home/holyogre/TrackManager/src -I/home/holyogre/TrackManager/utils -I/home/holyogre/TrackManager/include -isystem /usr/local/include/opencv4  -g   -fsanitize=address -fno-omit-frame-pointer -std=c++17 -o CMakeFiles/test_latestBuffer.dir/test_latestBuffer.cpp.o -c /home/holyogre/TrackManager/tests/test_latestBuffer.cpp",
+  "file": "/home/holyogre/TrackManager/tests/test_latestBuffer.cpp"
+},
+{
+  "directory": "/home/holyogre/TrackManager/build/tests",
+  "command": "/usr/bin/g++  -DENABLE_SPDLOG -DSPDLOG_COMPILED_LIB -DTRACKMANAGER_DEFAULT_LOG_DIR=\\\"/home/holyogre/TrackManager/log\\\" -I/home/holyogre/TrackManager/src -I/home/holyogre/TrackManager/utils -I/home/holyogre/TrackManager/include -isystem /usr/local/include/opencv4  -g   -fsanitize=address -fno-omit-frame-pointer -std=c++17 -o CMakeFiles/test_latestBuffer.dir/__/utils/Logger.cpp.o -c /home/holyogre/TrackManager/utils/Logger.cpp",
+  "file": "/home/holyogre/TrackManager/utils/Logger.cpp"
+}
+]

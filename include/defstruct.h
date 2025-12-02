@@ -34,10 +34,6 @@
 
 namespace track_project
 {
-    /*****************************************************************************
-     * @brief 通用结构
-     *****************************************************************************/
-
     // 时间戳结构（毫秒精度）
     struct Timestamp
     {
@@ -70,6 +66,13 @@ namespace track_project
         }
     };
 
+    // 通用联合体，用于不同类型转换
+    union IntFloatUnion
+    {
+        int ri;
+        float rf;
+    };
+
     /*****************************************************************************
      * @brief 流水线架构：TrackingBuffer，计划设计为环形缓冲区结构体
      * 特性：
@@ -88,19 +91,6 @@ namespace track_project
          * 通讯层允许输入数据堆积，提供适量弹性时序，处理数据为下图结构，存放到环形缓冲区中
          * 至少占用一个进程，不占用线程
          *****************************************************************************/
-        // 检测点迹结构
-        struct DetectedPointHeader
-        {
-            std::uint32_t batch_id;
-            int point_num;
-            Timestamp time;
-
-            // 可变拓展
-            double base_longitude;
-            double base_latitude;
-            double base_normal;
-        };
-
         // 检测点迹结构
         struct DetectedPoint
         {
@@ -196,7 +186,6 @@ namespace track_project
         struct TrackingBuffer
         {
             // 检测点迹结构
-            DetectedPointHeader detected_head;
             std::vector<DetectedPoint> detected_point;
 
             // 关联点迹申明
@@ -213,7 +202,7 @@ namespace track_project
     } // namespace pipeline
 
     /*****************************************************************************
-     * @brief 通信结构，内存有序排列，方便定长数据读取 
+     * @brief 通信结构，内存有序排列，方便定长数据读取
      *****************************************************************************/
     namespace communicate
     {

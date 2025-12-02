@@ -3,7 +3,9 @@ project(TrackManager LANGUAGES CXX)
 
 set(CMAKE_C_COMPILER "/usr/bin/gcc")
 set(CMAKE_CXX_COMPILER "/usr/bin/g++")
+# ==================== 基本配置 ====================
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)  
 
 # ==================== 配置选项 ====================
 # cmake启动测试的指令，如果不用的话请注释

@@ -28,6 +28,7 @@
 
 class UdpBase
 {
+    // 地址类型枚举
     enum class AddressType
     {
         IPv4,       ///< 使用IPv4协议（AF_INET）

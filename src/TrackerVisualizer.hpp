@@ -14,8 +14,6 @@
 #define TRACKER_VISUALIZER_HPP
 
 #include <opencv2/opencv.hpp>
-#include <vector>
-#include <cstdint>
 #include "TrackerManager.hpp"
 #include "Logger.hpp"
 
