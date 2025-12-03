@@ -12,7 +12,7 @@
 #include <sstream>
 #include <iomanip>
 
-namespace track_project::trackermanager
+namespace track_project::trackmanager
 {
 
     TrackerVisualizer::TrackerVisualizer(double lon_min, double lon_max,
@@ -242,4 +242,4 @@ namespace track_project::trackermanager
             return "未知";
         }
     }
-} // namespace track_project::trackermanager
+} // namespace track_project::trackmanager

@@ -8,7 +8,7 @@
 #include <numeric>
 #include <thread>
 
-using namespace track_project::trackermanager;
+using namespace track_project::trackmanager;
 using namespace track_project::communicate;
 
 TEST_CASE("TrackerVisualizer 基本绘制功能", "[TrackerVisualizer][draw]")
@@ -20,8 +20,8 @@ TEST_CASE("TrackerVisualizer 基本绘制功能", "[TrackerVisualizer][draw]")
     double lat_max = 40.0;
 
     // 创建可视化器和航迹管理器
-    track_project::trackermanager::TrackerVisualizer visualizer(lon_min, lon_max, lat_min, lat_max);
-    track_project::trackermanager::TrackerManager manager(10, 100); // 10条航迹，每航迹100点容量
+    track_project::trackmanager::TrackerVisualizer visualizer(lon_min, lon_max, lat_min, lat_max);
+    track_project::trackmanager::TrackerManager manager(10, 100); // 10条航迹，每航迹100点容量
 
     SECTION("创建单条航迹并绘制")
     {
@@ -58,8 +58,8 @@ TEST_CASE("TrackerVisualizer 基本绘制功能", "[TrackerVisualizer][draw]")
 TEST_CASE("TrackerVisualizer 边界情况测试", "[TrackerVisualizer][edge]")
 {
     // 使用较小的经纬度范围测试边界
-    track_project::trackermanager::TrackerVisualizer visualizer(116.3, 116.4, 39.8, 39.9);
-    track_project::trackermanager::TrackerManager manager(5, 50);
+    track_project::trackmanager::TrackerVisualizer visualizer(116.3, 116.4, 39.8, 39.9);
+    track_project::trackmanager::TrackerManager manager(5, 50);
 
     SECTION("边界点测试")
     {

@@ -1,6 +1,6 @@
 #include "TrackerManager.hpp"
 
-namespace track_project::trackermanager
+namespace track_project::trackmanager
 {
 
     // 定义最大外推次数,当>MAX_EXTRAPOLATION_TIMES时，终结对应航迹

@@ -59,4 +59,4 @@ add_trackermanager_test(test_trackVisualizer
 # add_test(NAME latestKbuffer功能测试 COMMAND test_latestBuffer "[LatestKBuffer][]")
 # add_test(NAME trackermanager测试 COMMAND test_trackermanager "[TrackerManager][]")
 # add_test(NAME trackVisualizer基本绘制功能测试 COMMAND test_trackVisualizer "[TrackerVisualizer][draw]")
-add_test(NAME TrackConfig配置加载测试 COMMAND test_TrackConfig "[TrackConfig][]")
+add_test(NAME TrackConfig配置加载测试 COMMAND test_TrackConfig "[TrackConfig][thread]")

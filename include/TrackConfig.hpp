@@ -23,6 +23,7 @@
 #include <algorithm>
 // 字符处理
 #include <cctype>
+#include <vector>
 // 网络通信
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -34,7 +35,7 @@
 namespace track_project
 {
     // 直接读取型配置项数量
-    constexpr int direct_read_count = 3;
+    constexpr int direct_read_count = 4;
 
     class TrackConfig
     {
@@ -43,6 +44,7 @@ namespace track_project
         std::string track_dst_ip = "127.0.0.1";
         std::uint16_t trackmanager_dst_port = 5555;
         std::uint16_t trackmanager_recv_port = 5556;
+        std::vector<std::string> trackmanager_recv_filters{};
 
         // 预解析项:
         sockaddr_in trackmanager_dst_sockaddr{}; // 预解析网络结构
@@ -58,7 +60,7 @@ namespace track_project
             if (!success)
             {
                 LOG_ERROR << "ATTENTION!!!CONFIG文件初始化失败";
-                assert(0); // 配置文件加载失败，强制终止程序
+                assert(0 && "配置文件加载失败，强制终止程序"); // 配置文件加载失败，强制终止程序
             }
         }
 
@@ -212,6 +214,51 @@ namespace track_project
         }
 
         /*****************************************************************************
+         * @brief 解析逗号分隔的过滤规则到 std::vector<std::string>
+         * @param filtersStr 待解析的字符串（格式: "TRACK_, SYSTEM_"）
+         * @param outFilters 输出参数，存储解析后的过滤规则
+         * @return true 解析成功（至少有一条有效规则）
+         * @return false 解析失败（无有效规则）
+         *****************************************************************************/
+        bool parseFilters(const std::string &filtersStr, std::vector<std::string> &outFilters)
+        {
+            outFilters.clear();
+            size_t start = 0, end = 0;
+
+            while (start < filtersStr.size())
+            {
+                end = filtersStr.find(',', start);
+                if (end == std::string::npos)
+                    end = filtersStr.size();
+
+                std::string filter = filtersStr.substr(start, end - start);
+
+                // 去除前后空格
+                size_t firstNonSpace = filter.find_first_not_of(" \t\n\r");
+                if (firstNonSpace != std::string::npos)
+                {
+                    size_t lastNonSpace = filter.find_last_not_of(" \t\n\r");
+                    filter = filter.substr(firstNonSpace, lastNonSpace - firstNonSpace + 1);
+                }
+
+                if (!filter.empty())
+                {
+                    outFilters.push_back(filter);
+                }
+
+                start = end + 1;
+            }
+
+            if (outFilters.empty())
+            {
+                LOG_ERROR << "过滤规则解析失败: 未找到有效规则 [filters=" << filtersStr << "]";
+                return false;
+            }
+
+            return true;
+        }
+
+        /*****************************************************************************
          * @brief 应用单个键值对到配置项
          * @param key 配置项名称
          * @param value 配置项值
@@ -234,6 +281,10 @@ namespace track_project
             else if (key == "trackmanager_recv_port")
             {
                 return parsePort(value, trackmanager_recv_port);
+            }
+            else if (key == "trackmanager_recv_filters")
+            {
+                return parseFilters(value, trackmanager_recv_filters);
             }
             else
             {

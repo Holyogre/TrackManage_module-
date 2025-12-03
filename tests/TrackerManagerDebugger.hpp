@@ -15,7 +15,7 @@
 
 namespace track_project
 {
-    namespace trackermanager
+    namespace trackmanager
     {
         class TrackerManagerDebugger
         {

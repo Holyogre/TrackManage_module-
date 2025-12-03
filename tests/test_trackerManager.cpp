@@ -5,7 +5,7 @@
 #include <iostream>
 #include "../utils/Logger.hpp"
 
-using namespace track_project::trackermanager;
+using namespace track_project::trackmanager;
 using namespace track_project;
 using namespace track_project::communicate;
 

@@ -27,7 +27,7 @@
 
 // 数据结构
 #include "LatestKBuffer.hpp"
-namespace track_project::trackermanager
+namespace track_project::trackmanager
 {
 
     /***************************************航迹管理类***************************************/
@@ -159,6 +159,6 @@ namespace track_project::trackermanager
         const std::uint32_t track_length; // 每条航迹的点迹容量上限
     };
 
-} // namespace track_project::trackermanager
+} // namespace track_project::trackmanager
 
 #endif

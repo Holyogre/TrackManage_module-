@@ -21,7 +21,7 @@
 #include <iostream>
 #include <cstring>
 
-namespace track_project::trackermanager
+namespace track_project::trackmanager
 {
 
     template <typename T>
@@ -197,5 +197,5 @@ namespace track_project::trackermanager
             full_ = (head_ == tail_);
         }
     };
-} // namespace track_project::trackermanager
+} // namespace track_project::trackmanager
 #endif // _UNIQUE_APPEND_RING_BUFFER_H_

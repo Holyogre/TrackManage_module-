@@ -1,166 +1,148 @@
 /*****************************************************************************
  * @file TrackerComm.hpp
  * @author xjl (xjl20011009@126.com)
- * @brief 发送接收不是成对的！
- * @version 0.2
- * @date 2025-12-02
+ * @brief 航迹通信管理器
+ * 特性：
+ * 1. 发送大数据自动分片（UDP）
+ * 2. 接收指令过滤存储
+ * 3. 支持配置热重载
  *
- * @copyright Copyright (c) 2025
- *
+ * @version 0.3
+ * @date 2025-12-03
  *****************************************************************************/
 #ifndef _TRACKER_COMM_HPP_
 #define _TRACKER_COMM_HPP_
 
+#include "TrackConfig.hpp"
+#include <defstruct.h>
+
 #include <cstdint>
 #include <string>
+#include <vector>
 #include <mutex>
-#include <chrono>
 #include <atomic>
 #include <thread>
-#include <vector>
-#include <memory>
 #include <condition_variable>
-#include "../utils/UdpBasic.hpp"
-#include "../include/TrackConfig.hpp"
-#include <defstruct.h>
+#include <memory>
+#include <chrono>
 
 namespace track_project::trackmanager
 {
-    // 线程安全的通信类
-    class TrackerComm
+    class UdpTrackerComm
     {
-    public:
+    private:
+        /*****************************************************************************
+         * @brief 包头部结构（56字节）
+         *****************************************************************************/
 #pragma pack(push, 1)
         struct PacketHeader
         {
-            char packet_id[128];           // 数据包ID (128字节)
-            std::uint32_t total_fragments; // 总片段数
-            std::uint32_t fragment_index;  // 当前片段索引
-            std::uint32_t total_size;      // 总数据大小（所有分片的总大小）
-            std::uint32_t fragment_size;   // 当前分片大小
-            std::uint32_t checksum;        // 校验和，32位异或
+            char packet_id[32];       // 包标识/指令ID
+            uint32_t total_fragments; // 总分片数
+            uint32_t fragment_index;  // 当前分片索引
+            uint32_t total_size;      // 总数据大小（字节）
+            uint32_t fragment_size;   // 当前分片大小（字节）
+            uint32_t checksum;        // 异或校验和
+            uint32_t reserved;        // 保留字段（对齐）
         };
 #pragma pack(pop)
 
+    public:
         /*****************************************************************************
-         * @brief 构造新的 Tracker Comm 对象
-         * @param filepath 配置文件路径
+         * @brief 构造UDP通信器，创建线程，启动时间循环
+         * @param config_path 配置文件路径
          *****************************************************************************/
-        explicit TrackerComm(const std::string &filepath);
+        explicit UdpTrackerComm(const std::string &config_path);
 
         /*****************************************************************************
-         * @brief 析构函数，停止接收数据
+         * @brief 析构函数，程序关闭等系统释放资源
          *****************************************************************************/
-        ~TrackerComm();
+        ~UdpTrackerComm();
 
-        /*****************************************************************************
-         * @brief 发送数据接口（自动分包）
-         * @param data 要发送的数据向量
-         * @return true 所有分片发送成功
-         * @return false 发送失败，原因见日志
-         *****************************************************************************/
-        bool sendData(const std::vector<IntFloatUnion> &data);
+        // 实现接口方法
+        bool requestSendTrackData(const std::vector<IntFloatUnion> &data);
+        std::vector<std::uint32_t> readCommands();
+        bool requestReload(const std::string &config_path);
 
-        /*****************************************************************************
-         * @brief 读取接收到的数据，然后清空接收区
-         * @return std::vector<std::uint32_t> 接收数据的向量
-         *****************************************************************************/
-        std::vector<std::uint32_t> readReceivedData();
-
-        /*****************************************************************************
-         * @brief 重新加载配置
-         * @param filepath 新的配置文件路径
-         *****************************************************************************/
-        void reload(const std::string &filepath);
-
-        /*****************************************************************************
-         * @brief 获取当前接收状态
-         * @return true 正在接收数据
-         * @return false 已停止接收
-         *****************************************************************************/
-        bool isReceiving() const { return is_receiving_.load(); }
-
-        // 禁止拷贝和赋值
-        TrackerComm(const TrackerComm &) = delete;
-        TrackerComm &operator=(const TrackerComm &) = delete;
-        TrackerComm(TrackerComm &&) = delete;
-        TrackerComm &operator=(TrackerComm &&) = delete;
+        // 禁用拷贝和移动
+        UdpTrackerComm(const UdpTrackerComm &) = delete;
+        UdpTrackerComm &operator=(const UdpTrackerComm &) = delete;
+        UdpTrackerComm(UdpTrackerComm &&) = delete;
+        UdpTrackerComm &operator=(UdpTrackerComm &&) = delete;
 
     private:
         // 常量定义
         static constexpr size_t HEADER_SIZE = sizeof(PacketHeader);
-        static constexpr size_t MAX_SEND_SIZE = 4096;       // 最大单个发送包大小
-        static constexpr size_t MAX_RECV_SIZE = 4096;       // 最大数据大小
-        static constexpr size_t RECV_BUFFER_CAPACITY = 100; // 接收缓冲区容量
+        static constexpr size_t MAX_UDP_PAYLOAD = 65507;          // UDP最大包长
+        static constexpr size_t MAX_FRAGMENT_SIZE = 4096;         // 单个分片最大载荷
+        static constexpr size_t COMMAND_BUFFER_CAPACITY = 10000;  // 指令缓冲区容量（约10000条指令）
+        static constexpr size_t COMMAND_WARNING_THRESHOLD = 8000; // 缓冲区警告阈值
 
-        // 接收端过滤器，多余位置填0
-        static constexpr char TRACK_COMMAND_ID[] = "TRACK_MERGE_COMMAND";
-
-        // 发送端包头名称
-        static constexpr char TRACK_PACKET_ID[] = "TRACK_PACKET";
+        // 包标识常量
+        static constexpr char TRACK_DATA_PREFIX[] = "TRACK_DATA"; // 航迹数据标识
 
         /*****************************************************************************
-         * @brief 接收数据循环（在线程中运行）
+         * @brief 事务循环
          *****************************************************************************/
-        void receiveLoop();
+        void udpTransactionLoop();
 
         /*****************************************************************************
-         * @brief 停止循环接收数据，清空接收区
-         * @param wait_complete 是否等待线程完全停止
+         * @brief 创建和绑定socket
+         * @return true 创建成功
          *****************************************************************************/
-        void stopReceiveData(bool wait_complete = true);
+        bool createAndBindSockets();
 
         /*****************************************************************************
-         * @brief 开始循环接收数据
-         * @return true 启动成功
-         * @return false 启动失败
+         * @brief 关闭所有socket
          *****************************************************************************/
-        bool startReceiveData();
+        void closeSockets();
 
         /*****************************************************************************
-         * @brief 计算32位异或校验和（优化版本）
-         * @param data 指向数据的指针
-         * @param size 数据大小（字节）
-         * @return std::uint32_t 计算得到的校验和
+         * @brief 执行配置重载（同步）
+         * @param config_path 配置文件路径
+         * @return true 重载成功
          *****************************************************************************/
-        static std::uint32_t calculateChecksum(const void *data, size_t size);
+        bool performReload(const std::string &config_path);
+
+        /*****************************************************************************
+         * @brief 计算32位异或校验和
+         * @param data 数据指针
+         * @param size 数据大小
+         * @return uint32_t 校验和
+         *****************************************************************************/
+        static uint32_t calculateXorChecksum(const void *data, size_t size);
 
         /*****************************************************************************
          * @brief 验证接收到的数据包
          * @param header 包头指针
-         * @param payload 数据载荷指针
-         * @param data_size 数据大小
+         * @param payload 数据指针
+         * @param payload_size 数据大小
          * @return true 验证通过
-         * @return false 验证失败
          *****************************************************************************/
-        bool validatePacket(const PacketHeader *header, const uint8_t *payload, size_t data_size);
+        bool validatePacket(const PacketHeader *header, const uint8_t *payload, size_t payload_size);
 
         /*****************************************************************************
-         * @brief 等待接收线程完全停止
-         * @param timeout_ms 超时时间（毫秒）
-         * @return true 线程已停止
-         * @return false 超时
+         * @brief 判断是否为有效指令（根据过滤器）
+         * @param packet_id 包标识
+         * @return true 是指令包
          *****************************************************************************/
-        bool waitForThreadStop(int timeout_ms = 1000);
+        bool isCommandPacket(const std::string &packet_id) const;
 
     private:
-        std::string filepath_; // 配置文件路径
-        TrackConfig config_;   // 配置对象
+        // Socket文件描述符
+        int send_socket_fd_ = -1;
+        int recv_socket_fd_ = -1;
 
-        std::unique_ptr<UdpBase> send_socket_; // 发送套接字
-        std::unique_ptr<UdpBase> recv_socket_; // 接收套接字
+        // 配置
+        std::string config_path_;
+        TrackConfig config_;
 
-        // 接收缓冲区，存储uint32_t数据
-        std::vector<std::uint32_t> recv_buffer_;
-        mutable std::mutex recv_mutex_;
-
-        // 接收线程相关
-        std::thread recv_thread_;
-        std::atomic<bool> is_receiving_;
-        std::atomic<bool> should_stop_;
-        std::condition_variable thread_stop_cv_;
-        std::mutex thread_stop_mutex_;
-        bool thread_stopped_;
+        // 接收缓冲区（存储原始uint32_t数据）
+        std::vector<std::uint32_t> command_buffer_;
+        // 发送缓冲区
+        std::vector<std::vector<IntFloatUnion>> send_buffer_;
+        // 重载配置文件
+        bool should_reload_config_;
     };
 
 } // namespace track_project::trackmanager

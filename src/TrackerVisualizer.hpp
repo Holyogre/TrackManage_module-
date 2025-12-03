@@ -17,7 +17,7 @@
 #include "TrackerManager.hpp"
 #include "Logger.hpp"
 
-namespace track_project::trackermanager
+namespace track_project::trackmanager
 {
 
     class TrackerVisualizer
@@ -86,5 +86,5 @@ namespace track_project::trackermanager
         std::vector<cv::Point> track_points;
     };
 
-} // namespace track_project::trackermanager
+} // namespace track_project::trackmanager
 #endif // TRACKER_VISUALIZER_HPP
