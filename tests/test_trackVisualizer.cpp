@@ -48,7 +48,7 @@ TEST_CASE("TrackerVisualizer 基本绘制功能", "[TrackerVisualizer][draw]")
         // 测试状态打印功能
         REQUIRE_NOTHROW(visualizer.printFullState(manager));
 
-        LOG_INFO << "单条航迹绘制测试完成，窗口将显示5秒，按任意键继续...";
+        std::cout << "单条航迹绘制测试完成，窗口将显示5秒，按任意键继续...";
 
         // 等待用户按键或超时
         cv::waitKey(5000); // 显示5秒
@@ -80,7 +80,7 @@ TEST_CASE("TrackerVisualizer 边界情况测试", "[TrackerVisualizer][edge]")
         // 应该能正常绘制边界点
         REQUIRE_NOTHROW(visualizer.draw_track(manager));
 
-        LOG_INFO << "边界点绘制测试完成";
+        std::cout << "边界点绘制测试完成";
         // 等待用户按键或超时
         cv::waitKey(5000); // 显示5秒
     }
@@ -124,12 +124,12 @@ TEST_CASE("TrackerManager 可视化绘制性能测试", "[TrackerVisualizer][ben
 
         for (const auto &[tracks, points, description] : test_cases)
         {
-            LOG_INFO << "\n"
+            std::cout << "\n"
                      << std::string(50, '=') << std::endl;
-            LOG_INFO << "测试案例: " << description << std::endl;
-            LOG_INFO << "规模: " << tracks << " 航迹 × " << points << " 点/航迹" << std::endl;
-            LOG_INFO << "总点数: " << tracks * points << std::endl;
-            LOG_INFO << std::string(50, '=') << std::endl;
+            std::cout << "测试案例: " << description << std::endl;
+            std::cout << "规模: " << tracks << " 航迹 × " << points << " 点/航迹" << std::endl;
+            std::cout << "总点数: " << tracks * points << std::endl;
+            std::cout << std::string(50, '=') << std::endl;
 
             // 预先准备数据
             TrackerManager scale_manager(tracks, points);
@@ -160,7 +160,7 @@ TEST_CASE("TrackerManager 可视化绘制性能测试", "[TrackerVisualizer][ben
             std::vector<double> run_times;
             run_times.reserve(NUM_RUNS);
 
-            LOG_INFO << "开始性能测试 (" << NUM_RUNS << " 次运行)..." << std::endl;
+            std::cout << "开始性能测试 (" << NUM_RUNS << " 次运行)..." << std::endl;
 
             // 预热运行（创建第一个visualizer并预热）
             {
@@ -210,12 +210,12 @@ TEST_CASE("TrackerManager 可视化绘制性能测试", "[TrackerVisualizer][ben
             double max_time = *std::max_element(run_times.begin(), run_times.end());
 
             // 输出统计结果
-            LOG_INFO << "\n*** 性能统计结果 ***" << std::endl;
-            LOG_INFO << "平均时间: " << std::fixed << std::setprecision(3) << mean << " ms" << std::endl;
-            LOG_INFO << "标准差:   " << std::fixed << std::setprecision(3) << std_dev << " ms" << std::endl;
-            LOG_INFO << "最小值:   " << std::fixed << std::setprecision(3) << min_time << " ms" << std::endl;
-            LOG_INFO << "最大值:   " << std::fixed << std::setprecision(3) << max_time << " ms" << std::endl;
-            LOG_INFO << "刷新频率: " << std::fixed << std::setprecision(1) << (1000.0 / mean) << " FPS" << std::endl;
+            std::cout << "\n*** 性能统计结果 ***" << std::endl;
+            std::cout << "平均时间: " << std::fixed << std::setprecision(3) << mean << " ms" << std::endl;
+            std::cout << "标准差:   " << std::fixed << std::setprecision(3) << std_dev << " ms" << std::endl;
+            std::cout << "最小值:   " << std::fixed << std::setprecision(3) << min_time << " ms" << std::endl;
+            std::cout << "最大值:   " << std::fixed << std::setprecision(3) << max_time << " ms" << std::endl;
+            std::cout << "刷新频率: " << std::fixed << std::setprecision(1) << (1000.0 / mean) << " FPS" << std::endl;
 
             // 验证数据完整性
             REQUIRE(scale_manager.getUsedCount() == scale_track_ids.size());

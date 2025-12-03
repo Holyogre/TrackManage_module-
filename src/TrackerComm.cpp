@@ -119,8 +119,8 @@ namespace track_project::trackmanager
             bool fragment_success = send_socket_->sendTo(
                 send_buffer.data(),
                 send_buffer.size(),
-                reinterpret_cast<const sockaddr *>(&config_.dst_sockaddr),
-                sizeof(config_.dst_sockaddr));
+                reinterpret_cast<const sockaddr *>(&config_.trackmanager_dst_sockaddr),
+                sizeof(config_.trackmanager_dst_sockaddr));
 
             if (!fragment_success)
             {

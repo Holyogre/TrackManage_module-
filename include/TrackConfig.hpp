@@ -3,8 +3,8 @@
  * @author xjl (xjl20011009@126.com)
  *
  * @brief 配置文件读取工具类
- * 原子化读取航迹管理器配置项
- * 记录日志
+ * 不具备线程安全性，严禁多线程同时操作同一实例
+ * 具备事务性，加载失败时回滚旧配置
  *
  * @version 0.3
  * @date 2025-11-07
@@ -26,29 +26,48 @@
 // 网络通信
 #include <netinet/in.h>
 #include <arpa/inet.h>
+// 异常处理
+#include <assert.h>
 // 日志库
 #include "../utils/Logger.hpp"
 
 namespace track_project
 {
+    // 直接读取型配置项数量
+    constexpr int direct_read_count = 3;
 
     class TrackConfig
     {
     public:
-        // === 对外暴露的可读配置项 ===
+        // 直接读取项:⚠️修改此处的时候需要同步修改 applyKeyValue方法以及 direct_read_count 常量
         std::string track_dst_ip = "127.0.0.1";
         std::uint16_t trackmanager_dst_port = 5555;
         std::uint16_t trackmanager_recv_port = 5556;
-        sockaddr_in dst_sockaddr{}; // 预解析网络结构
+
+        // 预解析项:
+        sockaddr_in trackmanager_dst_sockaddr{}; // 预解析网络结构
 
     public:
-        //======== 构造函数 ========
+        /*****************************************************************************
+         * @brief 构造函数，加载配置文件
+         * @param filepath 配置文件路径
+         *****************************************************************************/
         explicit TrackConfig(const std::string &filepath)
         {
-            reload(filepath);
+            bool success = reload(filepath);
+            if (!success)
+            {
+                LOG_ERROR << "ATTENTION!!!CONFIG文件初始化失败";
+                assert(0); // 配置文件加载失败，强制终止程序
+            }
         }
 
-        //======== 重载配置 ========
+        /*****************************************************************************
+         * @brief 重新加载配置文件
+         * @param filepath 配置文件路径
+         * @return true 加载成功
+         * @return false 加载失败，使用旧配置
+         *****************************************************************************/
         bool reload(const std::string &filepath)
         {
             std::ifstream file(filepath);
@@ -61,7 +80,7 @@ namespace track_project
             // 旧配置用于回滚
             auto old = *this;
 
-            bool parse_error = false;
+            int passed_items = 0;
             std::string line;
 
             while (std::getline(file, line))
@@ -77,34 +96,30 @@ namespace track_project
                 std::string key = trim_copy(line.substr(0, pos));
                 std::string value = trim_copy(line.substr(pos + 1));
 
-                if (!applyKeyValue(key, value))
+                if (applyKeyValue(key, value))
                 {
-                    parse_error = true;
+                    passed_items++;
+                }
+                else
+                {
+                    *this = old;
+                    LOG_ERROR << "配置项应用失败，回滚旧配置";
+                    return false;
                 }
             }
 
-            // 基本合法性验证
-            if (!isValid())
+            if (passed_items < direct_read_count)
             {
-                LOG_ERROR << "配置验证失败，回滚旧配置";
-                *this = old;
-                return false;
-            }
-
-            // 预解析 IP → sockaddr_in
-            if (!updateSockaddr())
-            {
-                LOG_ERROR << "IP 地址格式错误，回滚旧配置";
+                LOG_ERROR << "配置项共<" << passed_items << ">项，少于要求的<" << direct_read_count << ">项，回滚旧配置";
                 *this = old;
                 return false;
             }
 
             LOG_INFO << "配置文件重载成功: " << filepath;
-            return !parse_error; // 有解析错误但最终可用，也算成功
+            return true;
         }
 
     private:
-
         //=== 去除首尾空白 ===
         static void trim(std::string &s)
         {
@@ -122,73 +137,109 @@ namespace track_project
             return s;
         }
 
-        //=== 解析并应用 key=value ===
-        bool applyKeyValue(const std::string &key, const std::string &value)
+        /******************************************************************************
+         * @brief 解析IP地址字符串到 sockaddr_in 结构，在内部处理所有异常
+         * @param ipStr 待解析的IP字符串
+         * @param outIpStr 输出参数，存储解析后的IP字符串（仅当返回 true 时有效）
+         * @param outSockaddr 输出参数，存储解析后的sockaddr_in结构（仅当返回 true 时有效）
+         * @return true 解析成功
+         * @return false 解析失败
+         *****************************************************************************/
+        bool parseSockaddr(
+            const std::string &ipStr,
+            std::string &outIpStr,   // 用于更新 track_dst_ip
+            sockaddr_in &outSockaddr // 用于更新 dst_sockaddr
+        )
+        {
+            sockaddr_in tempAddr = {};
+            tempAddr.sin_family = AF_INET;
+
+            if (inet_pton(AF_INET, ipStr.c_str(), &tempAddr.sin_addr) != 1)
+            {
+                LOG_ERROR << "IP 地址格式非法：" << ipStr;
+                return false;
+            }
+
+            // 只有解析成功才更新输出参数
+            outIpStr = ipStr;
+            outSockaddr = tempAddr;
+            return true;
+        }
+
+        /*****************************************************************************
+         * @brief 解析端口号字符串到 uint16_t,在内部处理所有异常
+         * @param portStr 待解析的端口字符串
+         * @param outPort 输出参数，存储解析后的端口值（仅当返回 true 时有效）
+         * @return true 解析成功
+         * @return false 解析失败
+         *****************************************************************************/
+        bool parsePort(const std::string &portStr, std::uint16_t &outPort)
         {
             try
             {
-                if (key == "TRACK_DST_IP")
+                size_t pos = 0;
+                int port_int = std::stoi(portStr, &pos); // pos 会指向解析结束的位置
+
+                // 检查是否整个字符串都被解析（避免 "123.456" 这样的情况）
+                if (pos != portStr.length())
                 {
-                    track_dst_ip = value;
+                    LOG_ERROR << "端口值无效 [port=" << portStr << "]: 包含非法字符";
+                    return false;
                 }
-                else if (key == "TRACK_DST_PORT")
+
+                if (port_int < 1 || port_int > 65535)
                 {
-                    trackmanager_dst_port = static_cast<std::uint16_t>(std::stoi(value));
+                    LOG_ERROR << "端口值无效 [port=" << portStr << "]: 必须在 1–65535 范围内";
+                    return false;
                 }
-                else if (key == "TRACK_RECV_PORT")
-                {
-                    trackmanager_recv_port = static_cast<std::uint16_t>(std::stoi(value));
-                }
-                else
-                {
-                    LOG_INFO << "未知配置项: " << key << " = " << value;
-                }
+
+                outPort = static_cast<std::uint16_t>(port_int);
+                return true;
             }
-            catch (const std::exception &e)
+            catch (const std::invalid_argument &)
             {
-                LOG_ERROR << "配置项解析失败 [key=" << key
-                          << ", value=" << value
-                          << "]: " << e.what();
-                return false;
+                LOG_ERROR << "端口值无效 [port=" << portStr << "]: 不是有效数字";
             }
-            return true;
+            catch (const std::out_of_range &)
+            {
+                LOG_ERROR << "端口值无效 [port=" << portStr << "]: 数值超出范围";
+            }
+            catch (...)
+            {
+                LOG_ERROR << "端口值无效 [port=" << portStr << "]: 未知解析错误";
+            }
+            return false;
         }
 
-        //=== 配置合法性检查 ===
-        bool isValid() const
+        /*****************************************************************************
+         * @brief 应用单个键值对到配置项
+         * @param key 配置项名称
+         * @param value 配置项值
+         * @return true 应用成功
+         * @return false 应用失败（解析错误等）
+         *****************************************************************************/
+        bool applyKeyValue(const std::string &key, const std::string &value)
         {
-            if (track_dst_ip.empty())
-            {
-                LOG_ERROR << "目标 IP 为空";
-                return false;
-            }
-            if (trackmanager_dst_port == 0 || trackmanager_recv_port == 0)
-            {
-                LOG_ERROR << "端口不能为 0";
-                return false;
-            }
-            if (trackmanager_dst_port == trackmanager_recv_port)
-            {
-                LOG_ERROR << "发送端口和接收端口不能相同";
-                return false;
-            }
-            return true;
-        }
 
-        //=== 预构造 sockaddr_in ===
-        bool updateSockaddr()
-        {
-            dst_sockaddr = {}; // 清零
-            dst_sockaddr.sin_family = AF_INET;
-            dst_sockaddr.sin_port = htons(trackmanager_dst_port);
+            LOG_DEBUG << "应用配置项: " << key << " = " << value;
 
-            int res = inet_pton(AF_INET, track_dst_ip.c_str(), &dst_sockaddr.sin_addr);
-            if (res != 1)
+            if (key == "track_dst_ip")
             {
-                LOG_ERROR << "IP 地址格式非法：" << track_dst_ip;
+                return parseSockaddr(value, track_dst_ip, trackmanager_dst_sockaddr);
+            }
+            else if (key == "trackmanager_dst_port")
+            {
+                return parsePort(value, trackmanager_dst_port);
+            }
+            else if (key == "trackmanager_recv_port")
+            {
+                return parsePort(value, trackmanager_recv_port);
+            }
+            else
+            {
+                LOG_INFO << "未知配置项: " << key << " = " << value;
                 return false;
             }
-            return true;
         }
     };
 
