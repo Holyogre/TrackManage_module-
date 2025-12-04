@@ -44,12 +44,12 @@ namespace track_project
          * @brief 接收上一级流水线完成指令
          *
          * 当上一级流水线（如卡尔曼滤波、航迹关联等）完成处理后调用此接口。
-         * 实现应处理完成的数据，并触发下一阶段处理。
+         * 当前流水线接收到
          * 内部的任何失败都写入日志，然后继续运行，不用反馈正确与否，也没有总控来统一管理
          *
          * @param buffer 流水线缓冲区，包含各级流水线的处理结果
          *****************************************************************************/
-        virtual void onPipelineComplete() = 0;
+        virtual void onPipelineComplete(std::atomic<std::unique_ptr<track_project::pipeline::TrackingBuffer>>) = 0;
 
         /*****************************************************************************
          * @brief 接收航迹融合指令
