@@ -27,8 +27,14 @@
      - 本站可视化： 基于 OpenCV 实现了航迹数据的基础可视化，具备航线和航迹号显示功能
      - 整个流水线数据的可视化由通信组件实现，发送到对应端口,由HTML绘制（有空再做）
    - **管理服务层**：**ManagementService**
-     - 受流水线控制，当数据到达时，通过通信组件TrackerComm发送数据包到目的地
-     - 调用TrackerManager、TrackerVisualizer,TrackerComm实现
+     - 对外暴露的虚函数接口，提供标准化的控制指令接口
+     - 主要功能：
+       - 接收上一级流水线完成指令 (`onPipelineComplete`)
+       - 接收航迹融合指令 (`onTrackFusion`)
+       - 服务状态管理 (`initialize`, `shutdown`, `getServiceStatus`)
+       - 航迹数据查询 (`getActiveTracks`, `getTrackData`)
+     - 组合调用可视化插件、日志插件和航迹管理层
+     - 和流水线结构对接，实现前后端分离
 
 ## 开发日志  
 ### 2025-10-24 至 2025-10-25
@@ -126,3 +132,67 @@
      - 端口由commondata::Config结构体解析得到，禁止热重载
      - 监听端口，接收命令，执行控制
 2. 直接开始写管理服务层
+
+### 2025-12-04
+1. **管理服务层接口完善**
+   - 完成了 `ManagementService` 抽象基类的设计
+   - 定义了两个核心指令接口：
+     - `onPipelineComplete`: 接收上一级流水线完成指令，处理流水线缓冲区数据
+     - `onTrackFusion`: 接收航迹融合指令，合并两条航迹
+   - 添加了服务生命周期管理接口：
+     - `initialize`: 初始化服务
+     - `shutdown`: 停止服务
+     - `getServiceStatus`: 获取服务状态
+   - 添加了数据查询接口：
+     - `getActiveTracks`: 获取活跃航迹列表
+     - `getTrackData`: 获取指定航迹的点迹数据
+   - 接口设计遵循虚函数模式，支持多态实现和插件化扩展
+
+## ManagementService 接口使用示例
+
+```cpp
+#include "include/ManagementService.h"
+#include "include/defstruct.h"
+
+// 自定义实现类
+class MyManagementService : public track_project::ManagementService {
+public:
+    bool onPipelineComplete(
+        const track_project::pipeline::TrackingBuffer& buffer,
+        std::uint32_t pipeline_stage) override {
+        // 处理流水线完成数据
+        // 调用航迹管理层、可视化插件等
+        return true;
+    }
+    
+    bool onTrackFusion(
+        std::uint32_t source_track_id,
+        std::uint32_t target_track_id,
+        const std::string& fusion_reason) override {
+        // 执行航迹融合
+        // 调用 TrackerManager::merge_tracks()
+        return true;
+    }
+    
+    // 实现其他纯虚函数...
+};
+
+// 使用示例
+int main() {
+    std::unique_ptr<track_project::ManagementService> service = 
+        std::make_unique<MyManagementService>();
+    
+    if (service->initialize("config/config.ini")) {
+        // 服务初始化成功，可以开始接收指令
+    }
+    
+    return 0;
+}
+```
+
+## 下一步计划
+1. 实现 `ManagementService` 的具体实现类
+2. 集成可视化插件和日志插件
+3. 添加流水线调度器，协调各级流水线处理
+4. 完善配置管理系统
+5. 进行集成测试和性能优化
