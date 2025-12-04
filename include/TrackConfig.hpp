@@ -41,8 +41,8 @@ namespace track_project
     {
     public:
         // 直接读取项:⚠️修改此处的时候需要同步修改 applyKeyValue方法以及 direct_read_count 常量
-        std::string track_dst_ip = "127.0.0.1";
-        std::uint16_t trackmanager_dst_port = 5555;
+        // std::string track_dst_ip = "127.0.0.1";
+        // std::uint16_t trackmanager_dst_port = 5555;
         std::uint16_t trackmanager_recv_port = 5556;
         std::vector<std::string> trackmanager_recv_filters{};
 
@@ -270,14 +270,17 @@ namespace track_project
 
             LOG_DEBUG << "应用配置项: " << key << " = " << value;
 
-            if (key == "track_dst_ip")
+            if (false) // 方便注释
             {
-                return parseSockaddr(value, track_dst_ip, trackmanager_dst_sockaddr);
             }
-            else if (key == "trackmanager_dst_port")
-            {
-                return parsePort(value, trackmanager_dst_port);
-            }
+            // if (key == "track_dst_ip")
+            // {
+            //     return parseSockaddr(value, track_dst_ip, trackmanager_dst_sockaddr);
+            // }
+            // else if (key == "trackmanager_dst_port")
+            // {
+            //     return parsePort(value, trackmanager_dst_port);
+            // }
             else if (key == "trackmanager_recv_port")
             {
                 return parsePort(value, trackmanager_recv_port);

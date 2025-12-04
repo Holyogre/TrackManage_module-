@@ -11,9 +11,10 @@
    - 所有对外接口函数均在include文件下，引用trackerManager.hpp即可。编译CPP文件以LIB方式提供服务
    - 测试文件在tests文件夹下，通信组件具备特殊性，需要结合接收端进行检查
 2. **文件结构**
+   - 配置文件 [`config`](./config/)
    - 头文件 [`include`](./include/)
    - 源文件 [`src`](./src/)
-   - 三方库 [`utils`](./utils/)
+   - 工具库 [`utils`](./utils/)
    - 测试代码 [`tests`](./tests/)
    - 自动构建脚本 [`bmain.sh`](./bmain.sh)：
 3. **代码结构**
@@ -24,13 +25,7 @@
      - 调用latestKbuffer\<trackerContainer\>实现
    - 可视化组件：**TrackerVisualizer**
      - 本站可视化： 基于 OpenCV 实现了航迹数据的基础可视化，具备航线和航迹号显示功能
-     - 整个流水线数据的可视化由通信组件实现，发送到对应端口,由HTML绘制
-     - 航迹管理组件TrackerManager的友元
-   - 通信组件：**TrackerComm**
-     - 端口由commondata::Config结构体解析得到，禁止热重载
-     - 发送JSON数据，同时发送点迹信息和航迹信息
-     - 监听端口，接收命令，执行控制
-     - 航迹管理组件TrackerManager的友元
+     - 整个流水线数据的可视化由通信组件实现，发送到对应端口,由HTML绘制（有空再做）
    - **管理服务层**：**ManagementService**
      - 受流水线控制，当数据到达时，通过通信组件TrackerComm发送数据包到目的地
      - 调用TrackerManager、TrackerVisualizer,TrackerComm实现
@@ -126,5 +121,8 @@
 5. 发现耦合度过高，准备进行去耦合，将打包函数从航迹管理器中移除，放到通信类中——开始改动通信类
 
 ### 2025-12-1 
-1. 添加了UDPBASIC作为通信库基类
-2. 计划添加事件循环来写TrackerComm类，或者把comm类直接删了然后放到service里面直接用。。不然感觉内容太单薄了
+1. 下面这个通信组件我移除了，丢到一个专门的线程里面去，做成一个单独的工程，改成回调函数注册，避免使用太多系统资源    
+   - 通信组件：**TrackerComm**
+     - 端口由commondata::Config结构体解析得到，禁止热重载
+     - 监听端口，接收命令，执行控制
+2. 直接开始写管理服务层
