@@ -1,3 +1,4 @@
+//停用，因为配置文件改动太快，每次都要重写test很麻烦
 // #include <catch2/catch_all.hpp>
 // #include <fstream>
 // #include <thread>

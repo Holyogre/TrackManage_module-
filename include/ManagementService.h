@@ -1,18 +1,14 @@
 /*****************************************************************************
  * @file ManagementService.h
  * @author xjl (xjl20011009@126.com)
- * @brief 管理服务层 - 对外暴露的虚函数接口
+ * @brief 航机管理器API接口，抽象基类
  *
- * 提供两个主要指令接口：
- * 1. 接收上一级流水线完成指令
- * 2. 接收航迹融合指令
- * 3. 定期（1min）读取配置文件，重置接收接口
+ * 提供如下主要指令接口：
+ * 1. 接收上一级流水线完成指令，执行处理
+ * 2. 接收上一级流水线reload指令，实现当前流水线重载
+ * 3. 接收航迹融合指令
  *
- * 实现功能：
- * 在一个单独的线程中进行事务循环，外部通过接口进行请求，内部接口收到请求后进行对应处理
- * 接收BUFFER数据，进行航迹管理，显示；
- *
- * @version 0.2
+ * @version 0.3
  * @date 2025-12-04
  *
  * @copyright Copyright (c) 2025
@@ -33,16 +29,16 @@ namespace track_project
 {
 
     /**
-     * @class ManagementService
+     * @class TrackManagementAPI
      * @brief 管理服务层抽象基类 - 对外暴露的统一接口
      *
      * 该接口用于与流水线架构对接，提供标准化的控制指令接口。
      * 具体实现应组合调用可视化插件、日志插件和航迹管理层。
      */
-    class ManagementService
+    class TrackManagementAPI
     {
     public:
-        virtual ~ManagementService() = default;
+        virtual ~TrackManagementAPI() = default;
 
         /*****************************************************************************
          * @brief 接收上一级流水线完成指令
@@ -53,7 +49,7 @@ namespace track_project
          *
          * @param buffer 流水线缓冲区，包含各级流水线的处理结果
          *****************************************************************************/
-        virtual void onPipelineComplete(const pipeline::TrackingBuffer &buffer) = 0;
+        virtual void onPipelineComplete() = 0;
 
         /*****************************************************************************
          * @brief 接收航迹融合指令
@@ -71,17 +67,17 @@ namespace track_project
          *
          * 所有组件恢复到initialize的状态
          *****************************************************************************/
-        virtual void shutdown() = 0;
+        virtual void reload() = 0;
 
     protected:
         // 保护构造函数，确保只能通过派生类实例化
-        ManagementService() = default;
+        TrackManagementAPI() = default;
 
         // 禁止拷贝和移动
-        ManagementService(const ManagementService &) = delete;
-        ManagementService &operator=(const ManagementService &) = delete;
-        ManagementService(ManagementService &&) = delete;
-        ManagementService &operator=(ManagementService &&) = delete;
+        TrackManagementAPI(const TrackManagementAPI &) = delete;
+        TrackManagementAPI &operator=(const TrackManagementAPI &) = delete;
+        TrackManagementAPI(TrackManagementAPI &&) = delete;
+        TrackManagementAPI &operator=(TrackManagementAPI &&) = delete;
     };
 
 } // namespace track_project
