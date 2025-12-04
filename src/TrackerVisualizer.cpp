@@ -242,4 +242,18 @@ namespace track_project::trackmanager
             return "未知";
         }
     }
+
+    void TrackerVisualizer::clearAll()
+    {
+        // 将画布颜色重置为初始状态（白色背景）
+        img.setTo(cv::Scalar(255, 255, 255));
+        
+        // 清空显示窗口（如果存在）
+        if (cv::getWindowProperty("Track Visualizer", cv::WND_PROP_VISIBLE) >= 0) {
+            cv::imshow("Track Visualizer", img);
+            cv::waitKey(1);
+        }
+        
+        LOG_DEBUG << "TrackerVisualizer: 画布已清空，重置为初始状态" << std::endl;
+    }
 } // namespace track_project::trackmanager

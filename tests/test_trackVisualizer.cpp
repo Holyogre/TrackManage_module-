@@ -222,3 +222,80 @@ TEST_CASE("TrackerManager 可视化绘制性能测试", "[TrackerVisualizer][ben
         }
     }
 }
+
+TEST_CASE("TrackerVisualizer clearAll 功能测试", "[TrackerVisualizer][clear]")
+{
+    // 设置经纬度范围
+    double lon_min = 116.0;
+    double lon_max = 117.0;
+    double lat_min = 39.0;
+    double lat_max = 40.0;
+
+    // 创建可视化器和航迹管理器
+    track_project::trackmanager::TrackerVisualizer visualizer(lon_min, lon_max, lat_min, lat_max);
+    track_project::trackmanager::TrackerManager manager(5, 50);
+
+    SECTION("清空画布功能测试")
+    {
+        // 创建一条航迹并添加点
+        std::uint32_t track_id = manager.createTrack();
+        REQUIRE(manager.isValidTrack(track_id) == true);
+
+        // 添加测试点
+        TrackPoint point;
+        point.longitude = 116.5;
+        point.latitude = 39.5;
+        point.is_associated = true;
+        point.time.now();
+
+        REQUIRE(manager.push_track_point(track_id, point) == true);
+
+        // 第一次绘制，确保有内容
+        REQUIRE_NOTHROW(visualizer.draw_track(manager));
+        std::cout << "初始绘制完成，显示2秒..." << std::endl;
+        cv::waitKey(2000);
+
+        // 测试clearAll函数
+        REQUIRE_NOTHROW(visualizer.clearAll());
+        std::cout << "clearAll() 调用完成，显示2秒..." << std::endl;
+        cv::waitKey(2000);
+
+        // 再次绘制，应该显示空白画布
+        REQUIRE_NOTHROW(visualizer.draw_track(manager));
+        std::cout << "清空后重新绘制完成，显示2秒..." << std::endl;
+        cv::waitKey(2000);
+
+        // 验证画布已被清空（通过视觉验证，这里只测试函数调用不抛出异常）
+        SUCCEED("clearAll() 功能测试完成");
+    }
+
+    SECTION("与ManagementServiceImpl shutdown集成测试")
+    {
+        // 这个测试验证clearAll在ManagementServiceImpl shutdown中的调用
+        // 注意：这里不实际创建ManagementServiceImpl，只测试接口兼容性
+        
+        std::cout << "clearAll与shutdown集成测试：验证函数存在且可调用" << std::endl;
+        
+        // 验证clearAll函数存在且可调用
+        REQUIRE_NOTHROW(visualizer.clearAll());
+        
+        // 创建一些数据然后清空
+        std::uint32_t track_id = manager.createTrack();
+        if (track_id != 0) {
+            TrackPoint point;
+            point.longitude = 116.3;
+            point.latitude = 39.7;
+            point.is_associated = true;
+            point.time.now();
+            manager.push_track_point(track_id, point);
+            
+            // 绘制然后清空
+            visualizer.draw_track(manager);
+            cv::waitKey(1000);
+            visualizer.clearAll();
+            cv::waitKey(1000);
+        }
+        
+        SUCCEED("clearAll与shutdown集成测试完成");
+    }
+}
