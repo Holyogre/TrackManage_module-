@@ -114,7 +114,7 @@ namespace track_project
          * 输出条件：无
          * 至少占用一个线程，是否占用GPU待定
          *****************************************************************************/
-        // 剩余点迹
+        // 剩余点迹 
         struct AssociatedPoint
         {
             bool is_associated; // 关联情况
@@ -155,42 +155,7 @@ namespace track_project
          *****************************************************************************/
         // 航迹点标准结构，固定八字节存储
 
-        /*****************************************************************************
-         * @brief 航迹管理流水线结构，组成第三段流水线：
-         * 输入条件：环形缓冲区存在空闲段（此时航迹管理&卡尔曼滤波刚刚处理完）
-         * 输出条件：UDP发送成功
-         * 至少占用一个线程，不占用GPU
-         *****************************************************************************/
-        struct ExistTrack
-        {
-            std::uint32_t track_id = 0;
-            std::uint32_t extrapolation_count = 0;
-            std::uint32_t point_num = 0;
-            int state = 3; // 0表示航迹正常，1表示航迹外推，2表示航迹终结
 
-            double longitude;
-            double latitude;
-            double sog;      // 对地速度,m/s
-            double cog;      // 对地航向,北偏东角度，度
-            double angle;    // 雷达观测角度，雷达法线顺时针方向，度
-            double distance; // 雷达观测距离，距离雷达站距离，km
-
-            // 卡尔曼滤波预处理，不考虑曲率，辅助关联点迹计算下vx,vy
-            double x;
-            double y;
-        };
-
-        /*****************************************************************************
-         * @brief 缓冲区定义，TODO，我想把VECTOR的扩容给删了，改成一开始就开够空间
-         *****************************************************************************/
-        struct TrackingBuffer
-        {
-            // 检测点迹结构
-            std::vector<DetectedPoint> detected_point;
-
-            // 关联点迹申明
-            std::vector<AssociatedPoint> associated_point;
-        };
 
     } // namespace pipeline
 
