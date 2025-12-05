@@ -74,7 +74,7 @@ namespace track_project
     };
 
     /*****************************************************************************
-     * @brief 流水线架构：TrackingBuffer，计划设计为环形缓冲区结构体
+     * @brief 流水线架构：TrackingBuffer，计划为每个服务设计一个环形缓冲区结构体
      * 特性：
      * 1. 下级流水线只准用到上级流水线(和 **预处理线程** )的数据
      * 2. 表示航迹，点迹大小情况统一使用std::uint32_t确保数据长度一致性和非负性
@@ -109,20 +109,42 @@ namespace track_project
         };
 
         /*****************************************************************************
-         * @brief 航迹关联流水线结构，第一段流水线：
+         * @brief 点航关联结构&卡尔曼滤波，第一段流水线：
          * 输入条件：环形缓冲区存在空闲段（此时航迹管理刚刚处理完）
          * 输出条件：无
          * 至少占用一个线程，是否占用GPU待定
          *****************************************************************************/
-        // 关联点迹结构
+        // 剩余点迹
         struct AssociatedPoint
         {
-            std::uint32_t track_id;
-            std::uint32_t point_id;
+            bool is_associated; // 关联情况
+        };
 
-            // 卡尔曼滤波预处理，不考虑曲率
-            double vx;
-            double vy;
+        // 航迹结构
+        struct TrackPoint
+        {
+            double longitude;
+            double latitude;
+            double sog;      // 对地速度,m/s
+            double cog;      // 对地航向,北偏东角度，度
+            double angle;    // 雷达观测角度，雷达法线顺时针方向，度
+            double distance; // 雷达观测距离，距离雷达站距离，km
+
+            bool is_associated; // 是否关联
+            Timestamp time;
+
+            // 重载 << 操作符用于调试输出
+            friend std::ostream &operator<<(std::ostream &os, const TrackPoint &point)
+            {
+                os << "TrackPoint{"
+                   << "lon:" << std::fixed << std::setprecision(6) << point.longitude
+                   << ", lat:" << point.latitude
+                   << ", sog:" << std::setprecision(1) << point.sog
+                   << ", cog:" << point.cog
+                   << ", time:" << point.time
+                   << "}";
+                return os;
+            }
         };
 
         /*****************************************************************************
@@ -131,29 +153,7 @@ namespace track_project
          * 输出条件：无
          * 至少占用三个线程,起批需使用GPU
          *****************************************************************************/
-        // 航迹结构
-        struct NewTrack
-        {
-            bool is_ais;
-            std::uint32_t point_num;
-
-            // 结构待定，给个定长缓冲区吧，反正也没多少内存
-        };
-
-        // 卡尔曼滤波点迹
-        struct PredictedPoint
-        {
-            std::uint32_t track_id;
-            std::uint32_t point_id;
-
-            bool is_updated; // 表示该点是否被更新
-
-            // 卡尔曼滤波器结果
-            double x;
-            double y;
-            double vx;
-            double vy;
-        };
+        // 航迹点标准结构，固定八字节存储
 
         /*****************************************************************************
          * @brief 航迹管理流水线结构，组成第三段流水线：
@@ -190,13 +190,6 @@ namespace track_project
 
             // 关联点迹申明
             std::vector<AssociatedPoint> associated_point;
-
-            // 起批结构
-            std::vector<NewTrack> new_track;
-
-            // 确定部分
-            std::vector<PredictedPoint> predicted_point; // 预测结构
-            std::vector<ExistTrack> existed_point;
         };
 
     } // namespace pipeline
@@ -206,8 +199,7 @@ namespace track_project
      *****************************************************************************/
     namespace communicate
     {
-// 航迹头，请确保数据是完全自包含的数据块，固定4位存一个数字
-#pragma pack(push, 4)
+        // 航迹头，请确保数据是完全自包含的数据块，固定4位存一个数字
         struct TrackerHeader
         {
             std::uint32_t track_id = 0;
@@ -230,53 +222,8 @@ namespace track_project
                 point_num = 0;
                 state = -1;
             };
-
-            friend std::ostream &operator<<(std::ostream &os, const TrackerHeader &header)
-            {
-                os << "TrackerHeader [";
-                os << "track_id=" << header.track_id << ", ";
-                os << "extrapolation_count=" << header.extrapolation_count;
-                os << "]";
-
-                return os;
-            }
         };
-#pragma pack(pop)
 
-// 航迹点标准结构，固定八字节存储
-#pragma pack(push, 8)
-        struct TrackPoint
-        {
-            double longitude;
-            double latitude;
-            double sog;      // 对地速度,m/s
-            double cog;      // 对地航向,北偏东角度，度
-            double angle;    // 雷达观测角度，雷达法线顺时针方向，度
-            double distance; // 雷达观测距离，距离雷达站距离，km
-
-            bool is_associated; // 是否关联
-            Timestamp time;
-
-            // 重载 << 操作符用于调试输出
-            friend std::ostream &operator<<(std::ostream &os, const TrackPoint &point)
-            {
-                os << "TrackPoint{"
-                   << "lon:" << std::fixed << std::setprecision(6) << point.longitude
-                   << ", lat:" << point.latitude
-                   << ", sog:" << std::setprecision(1) << point.sog
-                   << ", cog:" << point.cog
-                   << ", time:" << point.time
-                   << "}";
-                return os;
-            }
-        };
-#pragma pack(pop)
-
-        // 约束
-        static_assert(std::is_trivially_copyable_v<TrackPoint>, "TrackPoint 不是平凡的");
-        static_assert(std::is_standard_layout_v<TrackPoint>, "TrackPoint 不是内存连续的");
-        static_assert(std::is_trivially_copyable_v<TrackerHeader>, "TrackerHeader 不是平凡的");
-        static_assert(std::is_standard_layout_v<TrackerHeader>, "TrackerHeader 不是内存连续的");
     } // namespace communicate
 
 } // track_project

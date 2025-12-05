@@ -4,9 +4,10 @@
  * @brief 航机管理器API接口，抽象基类
  *
  * 提供如下主要指令接口：
- * 1. 接收上一级流水线完成指令，执行处理
- * 2. 接收上一级流水线reload指令，实现当前流水线重载
- * 3. 接收航迹融合指令
+ * 1. 新增航迹
+ * 2. 删除航迹
+ * 3. 融合航迹
+ * 4. 开启可视化
  *
  * @version 0.3
  * @date 2025-12-04
@@ -49,7 +50,7 @@ namespace track_project
          *
          * @param buffer 流水线缓冲区，包含各级流水线的处理结果
          *****************************************************************************/
-        virtual void onPipelineComplete(std::atomic<std::unique_ptr<track_project::pipeline::TrackingBuffer>>) = 0;
+        virtual void run(track_project::pipeline::TrackingBuffer x) = 0;
 
         /*****************************************************************************
          * @brief 接收航迹融合指令
