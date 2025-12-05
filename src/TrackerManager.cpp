@@ -1,4 +1,5 @@
 #include "TrackerManager.hpp"
+#include "../utils/Logger.hpp"
 
 namespace track_project::trackmanager
 {
@@ -24,11 +25,12 @@ namespace track_project::trackmanager
     }
 
     // 申请新航迹存储器，申请一个最新的空闲内存池，更新ID编号
-    std::uint32_t TrackerManager::createTrack()
+    std::uint32_t TrackerManager::create_track()
     {
 
         if (free_slots_.empty())
         {
+            LOG_DEBUG << "无法申请新航迹，已不具备新航迹";
             return 0; // 内存池已满
         }
 
@@ -49,7 +51,7 @@ namespace track_project::trackmanager
     }
 
     // 释放航迹存储器，释放航迹-内存池队，添加空空闲内存池编号到末尾，调用结构体内置clear
-    bool TrackerManager::deleteTrack(std::uint32_t track_id)
+    bool TrackerManager::delete_track(std::uint32_t track_id)
     {
 
         auto it = track_id_to_pool_index_.find(track_id);
@@ -57,6 +59,7 @@ namespace track_project::trackmanager
         // 异常处理
         if (it == track_id_to_pool_index_.end())
         {
+            LOG_DEBUG << "删除航迹失败，该航迹号" << track_id << "不存在";
             return false; // 航迹不存在
         }
 
@@ -81,6 +84,7 @@ namespace track_project::trackmanager
         // 异常处理
         if (it == track_id_to_pool_index_.end())
         {
+            LOG_DEBUG << "添加航迹点失败，该航迹号" << track_id << "不存在";
             return false; // 航迹不存在
         }
 
@@ -94,7 +98,7 @@ namespace track_project::trackmanager
         // 若航迹外推次数过多或是置信度过低，请求删除航迹
         if (track.header.state == 2)
         {
-            TrackerManager::deleteTrack(track.header.track_id);
+            TrackerManager::delete_track(track.header.track_id);
             return false;
         }
 
@@ -131,6 +135,7 @@ namespace track_project::trackmanager
         // 异常处理
         if (target_it == track_id_to_pool_index_.end() || source_it == track_id_to_pool_index_.end())
         {
+            LOG_DEBUG << "航迹融合失败，源航迹" << source_track_id << "不存在";
             return false; // 航迹不存在
         }
 
@@ -145,6 +150,7 @@ namespace track_project::trackmanager
         std::uint32_t source_size = static_cast<std::uint32_t>(source_track.data.size());
         if (target_size < MAX_EXTRAPOLATION_TIMES || source_size < MAX_EXTRAPOLATION_TIMES)
         {
+            LOG_DEBUG << "航迹融合失败，目标航迹" << source_track_id << "不存在";
             return false;
         }
 
@@ -159,13 +165,13 @@ namespace track_project::trackmanager
         source_it->second = target_pool_index;
 
         // 3.删除target_id对应的容器
-        deleteTrack(target_track_id);
+        delete_track(target_track_id);
 
         return true;
     }
 
     // 重置整个缓冲区,所有内存池改为空弦状态，重置内存编号
-    void TrackerManager::clearAll()
+    void TrackerManager::clear_all()
     {
 
         for (auto &buffer : buffer_pool_)
@@ -185,7 +191,7 @@ namespace track_project::trackmanager
     }
 
     // 获取活跃的航迹号,返回一个包含所有活跃航迹ID的向量
-    std::vector<std::uint32_t> TrackerManager::getActiveTrackIds() const
+    std::vector<std::uint32_t> TrackerManager::get_active_track_ids() const
     {
         std::vector<std::uint32_t> active_ids;
         active_ids.reserve(track_id_to_pool_index_.size());
@@ -196,7 +202,7 @@ namespace track_project::trackmanager
         return active_ids;
     }
     // 获取id对应的航迹头部只读引用，若不存在返回nullptr
-    const TrackerManager::TrackerHeader *TrackerManager::getHeaderRef(std::uint32_t track_id) const
+    const TrackerManager::TrackerHeader *TrackerManager::get_header_ref(std::uint32_t track_id) const
     {
         auto it = track_id_to_pool_index_.find(track_id);
         if (it == track_id_to_pool_index_.end())
@@ -206,7 +212,7 @@ namespace track_project::trackmanager
     }
 
     // 获取id对应的航迹数据只读引用，若不存在返回nullptr
-    const LatestKBuffer<TrackerManager::TrackPoint> *TrackerManager::getDataRef(std::uint32_t track_id) const
+    const LatestKBuffer<TrackerManager::TrackPoint> *TrackerManager::get_data_ref(std::uint32_t track_id) const
     {
         auto it = track_id_to_pool_index_.find(track_id);
         if (it == track_id_to_pool_index_.end())

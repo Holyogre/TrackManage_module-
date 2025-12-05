@@ -33,9 +33,9 @@ namespace track_project::trackmanager
     /***************************************航迹管理类***************************************/
     class TrackerManager
     {
-        // 引入通信结构体
-        using TrackPoint = track_project::communicate::TrackPoint;
-        using TrackerHeader = track_project::communicate::TrackerHeader;
+
+        using TrackPoint = track_project::TrackPoint;
+        using TrackerHeader = track_project::TrackerHeader;
 
         // 航迹基础结构
         struct TrackerContainer
@@ -50,12 +50,6 @@ namespace track_project::trackmanager
             {
                 header.clear();
                 data.clear();
-            }
-
-            friend std::ostream &operator<<(std::ostream &os, const TrackerContainer &troj)
-            {
-                os << "TrackerContainer= [" << troj.header << troj.data << "]";
-                return os;
             }
         };
 
@@ -73,7 +67,7 @@ namespace track_project::trackmanager
          *
          * @return 航迹ID，如果内存池已满返回0
          *****************************************************************************/
-        std::uint32_t createTrack();
+        std::uint32_t create_track();
 
         /*****************************************************************************
          * @brief 删除航迹
@@ -81,7 +75,7 @@ namespace track_project::trackmanager
          * @param track_id 要删除的航迹ID
          * @return 是否成功删除
          *****************************************************************************/
-        bool deleteTrack(std::uint32_t track_id);
+        bool delete_track(std::uint32_t track_id);
 
         /*****************************************************************************
          * @brief 往对应的航迹中存入一个点迹，返回为FALSE的时候需要把对应的航迹给删除了
@@ -106,7 +100,7 @@ namespace track_project::trackmanager
         /*****************************************************************************
          * @brief 清空所有航迹
          *****************************************************************************/
-        void clearAll();
+        void clear_all();
 
         // 唯一存在的流水线组件，禁止拷贝，移动
         TrackerManager(const TrackerManager &) = delete;
@@ -120,26 +114,26 @@ namespace track_project::trackmanager
         /*****************************************************************************
          * @brief 对外接口：获取当前活跃的航迹ID列表（只读）
          *****************************************************************************/
-        std::vector<std::uint32_t> getActiveTrackIds() const;
+        std::vector<std::uint32_t> get_active_track_ids() const;
 
         /*****************************************************************************
          * @brief 返回对航迹头部的只读引用（若不存在返回 nullptr）
          * 注意：返回的引用在对应航迹被删除或被写改前保持有效。
          *****************************************************************************/
-        const TrackerHeader *getHeaderRef(std::uint32_t track_id) const;
+        const TrackerHeader *get_header_ref(std::uint32_t track_id) const;
 
         /*****************************************************************************
          * @brief 返回对航迹数据缓冲区的只读引用（若不存在返回 nullptr）
          * 返回类型为 `const LatestKBuffer<TrackPoint>*`，允许外部直接按索引访问而不拷贝。
          * 注意生命周期：引用在对应航迹被删除或写改前有效。
          *****************************************************************************/
-        const LatestKBuffer<TrackPoint> *getDataRef(std::uint32_t track_id) const;
+        const LatestKBuffer<TrackPoint> *get_data_ref(std::uint32_t track_id) const;
 
         // 统计信息
-        size_t getTotalCapacity() const { return buffer_pool_.size(); }
-        size_t getUsedCount() const { return track_id_to_pool_index_.size(); }
-        size_t getNextTrackId() const { return next_track_id_; }
-        bool isValidTrack(std::uint32_t track_id) const
+        size_t get_total_capacity() const { return buffer_pool_.size(); }
+        size_t get_used_count() const { return track_id_to_pool_index_.size(); }
+        size_t get_next_track_id() const { return next_track_id_; }
+        bool is_valid_track(std::uint32_t track_id) const
         {
             return track_id_to_pool_index_.find(track_id) != track_id_to_pool_index_.end();
         }

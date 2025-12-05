@@ -38,25 +38,25 @@ namespace track_project::trackmanager
         img.setTo(cv::Scalar(255, 255, 255)); // 清空图像
 
         // 使用公开只读接口获取活跃航迹ID
-        active_track_ids = manager.getActiveTrackIds();
+        active_track_ids = manager.get_active_track_ids();
 
         for (auto track_id : active_track_ids)
         {
-            drawSingleTrack(track_id, manager);
+            draw_single_track(track_id, manager);
         }
 
         cv::imshow("Track Visualizer", img);
         cv::waitKey(10);
     }
 
-    cv::Point TrackerVisualizer::convertToImageCoords(double longitude, double latitude) const
+    cv::Point TrackerVisualizer::convert_to_image_coords(double longitude, double latitude) const
     {
         int x = static_cast<int>(((longitude - lon_min) / (lon_max - lon_min)) * width);
         int y = static_cast<int>(((lat_max - latitude) / (lat_max - lat_min)) * height);
         return cv::Point(x, y);
     }
 
-    void TrackerVisualizer::clearAll()
+    void TrackerVisualizer::clear_all()
     {
         // 将画布颜色重置为初始状态（白色背景）
         img.setTo(cv::Scalar(255, 255, 255));
@@ -71,14 +71,14 @@ namespace track_project::trackmanager
         LOG_DEBUG << "TrackerVisualizer: 画布已清空，重置为初始状态" << std::endl;
     }
 
-    void TrackerVisualizer::drawSingleTrack(std::uint32_t track_id, const TrackerManager &manager)
+    void TrackerVisualizer::draw_single_track(std::uint32_t track_id, const TrackerManager &manager)
     {
-        using TrackPoint = track_project::communicate::TrackPoint;
-        using TrackerHeader = track_project::communicate::TrackerHeader;
+        using TrackPoint = track_project::TrackPoint;
+        using TrackerHeader = track_project::TrackerHeader;
 
         // 使用零拷贝只读引用获取头部和数据
-        const TrackerHeader *header_ptr = manager.getHeaderRef(track_id);
-        const LatestKBuffer<TrackPoint> *data_ptr = manager.getDataRef(track_id);
+        const TrackerHeader *header_ptr = manager.get_header_ref(track_id);
+        const LatestKBuffer<TrackPoint> *data_ptr = manager.get_data_ref(track_id);
 
         if (!header_ptr || !data_ptr)
         {
@@ -97,7 +97,7 @@ namespace track_project::trackmanager
         for (size_t i = 0; i < data_ptr->size(); ++i)
         {
             const auto &point = (*data_ptr)[i];
-            cv::Point img_point = convertToImageCoords(point.longitude, point.latitude);
+            cv::Point img_point = convert_to_image_coords(point.longitude, point.latitude);
 
             if (img_point.x < 0 || img_point.x >= width ||
                 img_point.y < 0 || img_point.y >= height)
@@ -116,11 +116,11 @@ namespace track_project::trackmanager
         }
 
         // 绘制航迹线条和标签
-        drawTrackLines(track_points);
-        drawTrackLabel(track_id, track_points.back());
+        draw_track_lines(track_points);
+        draw_track_label(track_id, track_points.back());
     }
 
-    void TrackerVisualizer::drawTrackLines(const std::vector<cv::Point> &points)
+    void TrackerVisualizer::draw_track_lines(const std::vector<cv::Point> &points)
     {
         // 绘制航迹线条，使用颜色渐变表示时间
         for (int i = 1; i < points.size(); ++i)
@@ -132,7 +132,7 @@ namespace track_project::trackmanager
         }
     }
 
-    void TrackerVisualizer::drawTrackLabel(std::uint32_t track_id, const cv::Point &position)
+    void TrackerVisualizer::draw_track_label(std::uint32_t track_id, const cv::Point &position)
     {
         std::string track_text = std::to_string(track_id);
 
@@ -171,7 +171,7 @@ namespace track_project::trackmanager
                     text_color, thickness, cv::LINE_AA);
     }
 
-    void TrackerVisualizer::printFullState(const TrackerManager &manager)
+    void TrackerVisualizer::print_full_state(const TrackerManager &manager)
     {
         std::stringstream ss;
         ss << "\n"
@@ -180,14 +180,14 @@ namespace track_project::trackmanager
         ss << std::string(60, '=') << std::endl;
 
         // 打印航迹管理类统计信息
-        printStatistics(manager, ss);
+        print_statistics(manager, ss);
         ss << std::endl;
         LOG_INFO << ss.str();
 
         // 打印内存池详情
         ss.clear();
         ss.str("");
-        printMemoryPool(manager, ss);
+        print_memory_pool(manager, ss);
         ss << std::endl;
 
         ss << std::string(60, '=') << "\n"
@@ -197,33 +197,33 @@ namespace track_project::trackmanager
         LOG_DEBUG << ss.str();
     }
 
-    void TrackerVisualizer::printStatistics(const TrackerManager &manager, std::stringstream &ss)
+    void TrackerVisualizer::print_statistics(const TrackerManager &manager, std::stringstream &ss)
     {
         ss << "系统统计:" << std::endl;
         ss << std::string(50, '-') << std::endl;
-        ss << "  总容量: " << manager.getTotalCapacity() << " 个航迹" << std::endl;
-        ss << "  使用中: " << manager.getUsedCount() << " 个航迹" << std::endl;
-        ss << "  下个ID: " << manager.getNextTrackId() << std::endl;
+        ss << "  总容量: " << manager.get_total_capacity() << " 个航迹" << std::endl;
+        ss << "  使用中: " << manager.get_used_count() << " 个航迹" << std::endl;
+        ss << "  下个ID: " << manager.get_next_track_id() << std::endl;
     }
 
-    void TrackerVisualizer::printMemoryPool(const TrackerManager &manager, std::stringstream &ss)
+    void TrackerVisualizer::print_memory_pool(const TrackerManager &manager, std::stringstream &ss)
     {
-        ss << "内存池详情 (" << manager.getTotalCapacity() << "个槽位):" << std::endl;
+        ss << "内存池详情 (" << manager.get_total_capacity() << "个槽位):" << std::endl;
         ss << std::string(50, '-') << std::endl;
 
         size_t active_count = 0;
-        std::vector<std::uint32_t> active_ids = manager.getActiveTrackIds();
+        std::vector<std::uint32_t> active_ids = manager.get_active_track_ids();
 
         for (auto track_id : active_ids)
         {
-            const track_project::communicate::TrackerHeader *header_ptr = manager.getHeaderRef(track_id);
-            const LatestKBuffer<track_project::communicate::TrackPoint> *data_ptr = manager.getDataRef(track_id);
+            const track_project::TrackerHeader *header_ptr = manager.get_header_ref(track_id);
+            const LatestKBuffer<track_project::TrackPoint> *data_ptr = manager.get_data_ref(track_id);
             if (!header_ptr || !data_ptr)
                 continue;
 
             active_count++;
             ss << "  航迹" << std::setw(4) << header_ptr->track_id
-               << " [状态:" << std::setw(4) << stateToString(header_ptr->state)
+               << " [状态:" << std::setw(4) << state_to_string(header_ptr->state)
                << ", 外推:" << std::setw(1) << header_ptr->extrapolation_count
                << ", 点数:" << std::setw(3) << data_ptr->size() << "]";
 
@@ -243,7 +243,7 @@ namespace track_project::trackmanager
         }
     }
 
-    const char *TrackerVisualizer::stateToString(int state)
+    const char *TrackerVisualizer::state_to_string(int state)
     {
         switch (state)
         {

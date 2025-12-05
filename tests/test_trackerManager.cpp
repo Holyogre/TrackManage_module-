@@ -7,7 +7,6 @@
 
 using namespace track_project::trackmanager;
 using namespace track_project;
-using namespace track_project::communicate;
 
 // 定义最大外推次数,当>MAX_EXTRAPOLATION_TIMES时，删除对应航迹
 constexpr size_t MAX_EXTRAPOLATION_TIMES = 3;
@@ -18,15 +17,15 @@ TEST_CASE("TrackerManager 构造/析构函数测试", "[TrackerManager][Construc
     SECTION("标准构造")
     {
         TrackerManager manager;
-        REQUIRE(manager.getTotalCapacity() == 2000);
-        REQUIRE(manager.getUsedCount() == 0);
+        REQUIRE(manager.get_total_capacity() == 2000);
+        REQUIRE(manager.get_used_count() == 0);
     }
 
     SECTION("定制化构造")
     {
         TrackerManager manager(100, 50);
-        REQUIRE(manager.getTotalCapacity() == 100);
-        REQUIRE(manager.getUsedCount() == 0);
+        REQUIRE(manager.get_total_capacity() == 100);
+        REQUIRE(manager.get_used_count() == 0);
     }
 
     SECTION("析构")
@@ -35,7 +34,7 @@ TEST_CASE("TrackerManager 构造/析构函数测试", "[TrackerManager][Construc
             TrackerManager manager(100, 50);
             for (int i = 0; i < 50; ++i)
             {
-                manager.createTrack();
+                manager.create_track();
             }
         }
         // 如果没崩溃就认为正常运行
@@ -49,18 +48,18 @@ TEST_CASE("TrackerManager 申请新航迹容器", "[TrackerManager][create]")
 
     SECTION("申请多条新航迹")
     {
-        std::uint32_t id1 = manager.createTrack();
-        std::uint32_t id2 = manager.createTrack();
-        std::uint32_t id3 = manager.createTrack();
+        std::uint32_t id1 = manager.create_track();
+        std::uint32_t id2 = manager.create_track();
+        std::uint32_t id3 = manager.create_track();
 
         REQUIRE(id1 == 1);
         REQUIRE(id2 == 2);
         REQUIRE(id3 == 3);
-        REQUIRE(manager.getUsedCount() == 3);
+        REQUIRE(manager.get_used_count() == 3);
 
-        REQUIRE(manager.isValidTrack(id1));
-        REQUIRE(manager.isValidTrack(id2));
-        REQUIRE(manager.isValidTrack(id3));
+        REQUIRE(manager.is_valid_track(id1));
+        REQUIRE(manager.is_valid_track(id2));
+        REQUIRE(manager.is_valid_track(id3));
     }
 
     SECTION("满空间时申请新航迹")
@@ -68,27 +67,27 @@ TEST_CASE("TrackerManager 申请新航迹容器", "[TrackerManager][create]")
         // Fill the pool
         for (std::uint32_t i = 0; i < 10; ++i)
         {
-            manager.createTrack();
+            manager.create_track();
         }
 
-        REQUIRE(manager.getUsedCount() == 10);
+        REQUIRE(manager.get_used_count() == 10);
 
         // Try to create one more
-        size_t overflow_id = manager.createTrack();
+        size_t overflow_id = manager.create_track();
         REQUIRE(overflow_id == 0);
-        REQUIRE(manager.getUsedCount() == 10);
+        REQUIRE(manager.get_used_count() == 10);
     }
 
     SECTION("ID自增性测试")
     {
-        manager.createTrack();
+        manager.create_track();
         for (std::uint32_t i = 1; i < 10; i++)
         {
-            manager.deleteTrack(i);
+            manager.delete_track(i);
 
-            size_t id = manager.createTrack();
+            size_t id = manager.create_track();
             REQUIRE(id == i + 1);
-            REQUIRE(manager.getUsedCount() == 1); // 确保是同一个内存池
+            REQUIRE(manager.get_used_count() == 1); // 确保是同一个内存池
         }
     }
 }
@@ -96,7 +95,7 @@ TEST_CASE("TrackerManager 申请新航迹容器", "[TrackerManager][create]")
 TEST_CASE("TrackerManager 放入元素", "[TrackerManager][push]")
 {
     TrackerManager manager(10, 5);
-    std::uint32_t track_id = manager.createTrack();
+    std::uint32_t track_id = manager.create_track();
 
     // 创建测试点
     TrackPoint test_point;
@@ -111,11 +110,11 @@ TEST_CASE("TrackerManager 放入元素", "[TrackerManager][push]")
     SECTION("放入不存在的航迹")
     {
         std::uint32_t invalid_track_id = 9999;
-        size_t initial_used = manager.getUsedCount();
+        size_t initial_used = manager.get_used_count();
         bool result = manager.push_track_point(invalid_track_id, test_point);
 
         REQUIRE(result == false);
-        REQUIRE(manager.getUsedCount() == initial_used); // 航迹数量不变
+        REQUIRE(manager.get_used_count() == initial_used); // 航迹数量不变
     }
 
     SECTION("放置超出容量的航迹点")
@@ -131,7 +130,7 @@ TEST_CASE("TrackerManager 放入元素", "[TrackerManager][push]")
         }
 
         // 验证航迹仍然有效
-        REQUIRE(manager.isValidTrack(track_id) == true);
+        REQUIRE(manager.is_valid_track(track_id) == true);
 
         // 继续添加应该仍然成功（LatestKBuffer 会自动处理）
         TrackPoint extra_point = test_point;
@@ -154,7 +153,7 @@ TEST_CASE("TrackerManager 放入元素", "[TrackerManager][push]")
         // 添加关联点应该减少外推计数
         bool result = manager.push_track_point(track_id, test_point);
         REQUIRE(result == true);
-        REQUIRE(manager.isValidTrack(track_id) == true);
+        REQUIRE(manager.is_valid_track(track_id) == true);
     }
 
     SECTION("超过最大外推次数触发删除")
@@ -171,12 +170,12 @@ TEST_CASE("TrackerManager 放入元素", "[TrackerManager][push]")
         }
 
         // 再添加一个非关联点应该触发删除
-        size_t initial_used = manager.getUsedCount();
+        size_t initial_used = manager.get_used_count();
         bool final_result = manager.push_track_point(track_id, non_associated_point);
 
         REQUIRE(final_result == false); // 返回false表示航迹被删除
-        REQUIRE(manager.getUsedCount() == initial_used - 1);
-        REQUIRE(manager.isValidTrack(track_id) == false);
+        REQUIRE(manager.get_used_count() == initial_used - 1);
+        REQUIRE(manager.is_valid_track(track_id) == false);
     }
 }
 
@@ -184,37 +183,37 @@ TEST_CASE("TrackerManager 删除航迹容器", "[TrackerManager][delete]")
 {
 
     TrackerManager manager(10, 5);
-    std::uint32_t track_id = manager.createTrack();
+    std::uint32_t track_id = manager.create_track();
 
     SECTION("删除存在的航迹")
     {
-        REQUIRE(manager.deleteTrack(track_id) == true);
-        REQUIRE(manager.getUsedCount() == 0);
-        REQUIRE(manager.isValidTrack(track_id) == false);
+        REQUIRE(manager.delete_track(track_id) == true);
+        REQUIRE(manager.get_used_count() == 0);
+        REQUIRE(manager.is_valid_track(track_id) == false);
     }
 
     SECTION("删除不存在的航迹")
     {
-        REQUIRE(manager.deleteTrack(track_id + 1) == false);
-        REQUIRE(manager.getUsedCount() == 1);
+        REQUIRE(manager.delete_track(track_id + 1) == false);
+        REQUIRE(manager.get_used_count() == 1);
     }
 
     SECTION("全航迹清理测试")
     {
         // 多造点航迹
-        manager.createTrack();
-        manager.createTrack();
-        manager.createTrack();
-        REQUIRE(manager.getUsedCount() == 4);
+        manager.create_track();
+        manager.create_track();
+        manager.create_track();
+        REQUIRE(manager.get_used_count() == 4);
 
-        manager.clearAll();
+        manager.clear_all();
 
-        REQUIRE(manager.getUsedCount() == 0);
+        REQUIRE(manager.get_used_count() == 0);
 
         // ID重置确认
-        size_t new_id = manager.createTrack();
+        size_t new_id = manager.create_track();
         REQUIRE(new_id == 1); // ID重置
-        REQUIRE(manager.getUsedCount() == 1);
+        REQUIRE(manager.get_used_count() == 1);
     }
 }
 
@@ -251,7 +250,7 @@ TEST_CASE("TrackerManager NUMA性能测试", "[TrackerManager][test_bench_chrono
         auto duration = run_benchmark("创建2000个空航迹", [&]()
                                       {
             for (std::uint32_t i = 0; i < TRACK_COUNT; ++i) {
-                manager.createTrack();
+                manager.create_track();
             } });
 
         double avg_time_per_track = (double)duration.count() / TRACK_COUNT;
@@ -267,7 +266,7 @@ TEST_CASE("TrackerManager NUMA性能测试", "[TrackerManager][test_bench_chrono
         std::vector<std::uint32_t> track_ids;
         for (std::uint32_t i = 0; i < TRACK_COUNT; ++i)
         {
-            std::uint32_t id = manager.createTrack();
+            std::uint32_t id = manager.create_track();
             if (id != 0)
                 track_ids.push_back(id);
         }
@@ -293,7 +292,7 @@ TEST_CASE("TrackerManager NUMA性能测试", "[TrackerManager][test_bench_chrono
         std::vector<std::uint32_t> track_ids;
         for (std::uint32_t i = 0; i < TRACK_COUNT; ++i)
         {
-            std::uint32_t id = manager.createTrack();
+            std::uint32_t id = manager.create_track();
             if (id != 0)
             {
                 track_ids.push_back(id);
@@ -307,7 +306,7 @@ TEST_CASE("TrackerManager NUMA性能测试", "[TrackerManager][test_bench_chrono
         auto duration = run_benchmark("删除2000个满载航迹", [&]()
                                       {
             for (std::uint32_t track_id : track_ids) {
-                manager.deleteTrack(track_id);
+                manager.delete_track(track_id);
             } });
 
         double avg_time_per_track = (double)duration.count() / TRACK_COUNT;
@@ -341,7 +340,7 @@ TEST_CASE("TrackerManager 核心性能测试", "[TrackerManager][benchmark]")
         {
             for (std::uint32_t i = 0; i < TRACK_COUNT; ++i)
             {
-                manager.createTrack();
+                manager.create_track();
             }
         };
     }
@@ -354,7 +353,7 @@ TEST_CASE("TrackerManager 核心性能测试", "[TrackerManager][benchmark]")
         std::vector<std::uint32_t> track_ids;
         for (std::uint32_t i = 0; i < TRACK_COUNT; ++i)
         {
-            std::uint32_t id = manager.createTrack();
+            std::uint32_t id = manager.create_track();
             if (id != 0)
                 track_ids.push_back(id);
         }
@@ -379,7 +378,7 @@ TEST_CASE("TrackerManager 核心性能测试", "[TrackerManager][benchmark]")
         std::vector<std::uint32_t> track_ids;
         for (std::uint32_t i = 0; i < TRACK_COUNT; ++i)
         {
-            std::uint32_t id = manager.createTrack();
+            std::uint32_t id = manager.create_track();
             if (id != 0)
             {
                 track_ids.push_back(id);
@@ -394,7 +393,7 @@ TEST_CASE("TrackerManager 核心性能测试", "[TrackerManager][benchmark]")
         {
             for (std::uint32_t track_id : track_ids)
             {
-                manager.deleteTrack(track_id);
+                manager.delete_track(track_id);
             }
         };
     }

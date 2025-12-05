@@ -98,7 +98,7 @@ namespace track_project
                 std::string key = trim_copy(line.substr(0, pos));
                 std::string value = trim_copy(line.substr(pos + 1));
 
-                if (applyKeyValue(key, value))
+                if (apply_key_value(key, value))
                 {
                     passed_items++;
                 }
@@ -147,7 +147,7 @@ namespace track_project
          * @return true 解析成功
          * @return false 解析失败
          *****************************************************************************/
-        bool parseSockaddr(
+        bool parse_sockaddr(
             const std::string &ipStr,
             std::string &outIpStr,   // 用于更新 track_dst_ip
             sockaddr_in &outSockaddr // 用于更新 dst_sockaddr
@@ -175,7 +175,7 @@ namespace track_project
          * @return true 解析成功
          * @return false 解析失败
          *****************************************************************************/
-        bool parsePort(const std::string &portStr, std::uint16_t &outPort)
+        bool parse_port(const std::string &portStr, std::uint16_t &outPort)
         {
             try
             {
@@ -220,7 +220,7 @@ namespace track_project
          * @return true 解析成功（至少有一条有效规则）
          * @return false 解析失败（无有效规则）
          *****************************************************************************/
-        bool parseFilters(const std::string &filtersStr, std::vector<std::string> &outFilters)
+        bool parse_filters(const std::string &filtersStr, std::vector<std::string> &outFilters)
         {
             outFilters.clear();
             size_t start = 0, end = 0;
@@ -265,7 +265,7 @@ namespace track_project
          * @return true 应用成功
          * @return false 应用失败（解析错误等）
          *****************************************************************************/
-        bool applyKeyValue(const std::string &key, const std::string &value)
+        bool apply_key_value(const std::string &key, const std::string &value)
         {
 
             LOG_DEBUG << "应用配置项: " << key << " = " << value;
@@ -283,11 +283,11 @@ namespace track_project
             // }
             else if (key == "trackmanager_recv_port")
             {
-                return parsePort(value, trackmanager_recv_port);
+                return parse_port(value, trackmanager_recv_port);
             }
             else if (key == "trackmanager_recv_filters")
             {
-                return parseFilters(value, trackmanager_recv_filters);
+                return parse_filters(value, trackmanager_recv_filters);
             }
             else
             {

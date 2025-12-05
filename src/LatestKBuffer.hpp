@@ -66,14 +66,14 @@ namespace track_project::trackmanager
         void push(const T &item) noexcept
         {
             buffer_[head_] = item;
-            _advanceHead();
+            _advance_head();
         }
 
         // 2. 移动写入
         void push(T &&item) noexcept
         {
             buffer_[head_] = std::move(item);
-            _advanceHead();
+            _advance_head();
         }
 
         // 3. 原地构造
@@ -81,7 +81,7 @@ namespace track_project::trackmanager
         void emplace(Args &&...args) noexcept
         {
             buffer_[head_] = T(std::forward<Args>(args)...);
-            _advanceHead();
+            _advance_head();
         }
 
         /*****************************************************************************
@@ -100,7 +100,7 @@ namespace track_project::trackmanager
         }
 
         // 批量拷贝到目标数组
-        size_t copyTo(T *dest, size_t maxCount) const noexcept
+        size_t copy_to(T *dest, size_t maxCount) const noexcept
         {
             if (!dest || maxCount == 0 || empty())
                 return 0;
@@ -182,7 +182,7 @@ namespace track_project::trackmanager
         }
 
         // 数据写入位置控制
-        void _advanceHead() noexcept
+        void _advance_head() noexcept
         {
             if (full_)
             {

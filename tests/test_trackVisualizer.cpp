@@ -9,7 +9,8 @@
 #include <thread>
 
 using namespace track_project::trackmanager;
-using namespace track_project::communicate;
+using namespace track_project;
+using TrackPoint= track_project::TrackPoint;
 
 TEST_CASE("TrackerVisualizer 基本绘制功能", "[TrackerVisualizer][draw]")
 {
@@ -26,8 +27,8 @@ TEST_CASE("TrackerVisualizer 基本绘制功能", "[TrackerVisualizer][draw]")
     SECTION("创建单条航迹并绘制")
     {
         // 创建一条航迹
-        std::uint32_t track_id = manager.createTrack();
-        REQUIRE(manager.isValidTrack(track_id) == true);
+        std::uint32_t track_id = manager.create_track();
+        REQUIRE(manager.is_valid_track(track_id) == true);
 
         // 添加几个测试点
         for (int i = 0; i < 100; i++)
@@ -46,7 +47,7 @@ TEST_CASE("TrackerVisualizer 基本绘制功能", "[TrackerVisualizer][draw]")
         REQUIRE_NOTHROW(visualizer.draw_track(manager));
 
         // 测试状态打印功能
-        REQUIRE_NOTHROW(visualizer.printFullState(manager));
+        REQUIRE_NOTHROW(visualizer.print_full_state(manager));
 
         std::cout << "单条航迹绘制测试完成，窗口将显示5秒，按任意键继续...";
 
@@ -63,7 +64,7 @@ TEST_CASE("TrackerVisualizer 边界情况测试", "[TrackerVisualizer][edge]")
 
     SECTION("边界点测试")
     {
-        std::uint32_t track_id = manager.createTrack();
+        std::uint32_t track_id = manager.create_track();
 
         // 测试边界点
         TrackPoint edge_point;
@@ -138,7 +139,7 @@ TEST_CASE("TrackerManager 可视化绘制性能测试", "[TrackerVisualizer][ben
             // 填充数据...
             for (int i = 0; i < tracks; ++i)
             {
-                std::uint32_t id = scale_manager.createTrack();
+                std::uint32_t id = scale_manager.create_track();
                 if (id != 0)
                 {
                     scale_track_ids.push_back(id);
@@ -218,7 +219,7 @@ TEST_CASE("TrackerManager 可视化绘制性能测试", "[TrackerVisualizer][ben
             std::cout << "刷新频率: " << std::fixed << std::setprecision(1) << (1000.0 / mean) << " FPS" << std::endl;
 
             // 验证数据完整性
-            REQUIRE(scale_manager.getUsedCount() == scale_track_ids.size());
+            REQUIRE(scale_manager.get_used_count() == scale_track_ids.size());
         }
     }
 }
@@ -238,8 +239,8 @@ TEST_CASE("TrackerVisualizer clearAll 功能测试", "[TrackerVisualizer][clear]
     SECTION("清空画布功能测试")
     {
         // 创建一条航迹并添加点
-        std::uint32_t track_id = manager.createTrack();
-        REQUIRE(manager.isValidTrack(track_id) == true);
+        std::uint32_t track_id = manager.create_track();
+        REQUIRE(manager.is_valid_track(track_id) == true);
 
         // 添加测试点
         TrackPoint point;
@@ -256,7 +257,7 @@ TEST_CASE("TrackerVisualizer clearAll 功能测试", "[TrackerVisualizer][clear]
         cv::waitKey(2000);
 
         // 测试clearAll函数
-        REQUIRE_NOTHROW(visualizer.clearAll());
+        REQUIRE_NOTHROW(visualizer.clear_all());
         std::cout << "clearAll() 调用完成，显示2秒..." << std::endl;
         cv::waitKey(2000);
 
@@ -277,10 +278,10 @@ TEST_CASE("TrackerVisualizer clearAll 功能测试", "[TrackerVisualizer][clear]
         std::cout << "clearAll与shutdown集成测试：验证函数存在且可调用" << std::endl;
         
         // 验证clearAll函数存在且可调用
-        REQUIRE_NOTHROW(visualizer.clearAll());
+        REQUIRE_NOTHROW(visualizer.clear_all());
         
         // 创建一些数据然后清空
-        std::uint32_t track_id = manager.createTrack();
+        std::uint32_t track_id = manager.create_track();
         if (track_id != 0) {
             TrackPoint point;
             point.longitude = 116.3;
@@ -292,7 +293,7 @@ TEST_CASE("TrackerVisualizer clearAll 功能测试", "[TrackerVisualizer][clear]
             // 绘制然后清空
             visualizer.draw_track(manager);
             cv::waitKey(1000);
-            visualizer.clearAll();
+            visualizer.clear_all();
             cv::waitKey(1000);
         }
         

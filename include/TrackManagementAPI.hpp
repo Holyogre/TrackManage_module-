@@ -42,33 +42,31 @@ namespace track_project
         virtual ~TrackManagementAPI() = default;
 
         /*****************************************************************************
-         * @brief 接收上一级流水线完成指令
+         * @brief 航迹生成请求
          *
-         * 当上一级流水线（如卡尔曼滤波、航迹关联等）完成处理后调用此接口。
-         * 当前流水线接收到
-         * 内部的任何失败都写入日志，然后继续运行，不用反馈正确与否，也没有总控来统一管理
-         *
-         * @param buffer 流水线缓冲区，包含各级流水线的处理结果
+         * @param new_track 新航迹结构
          *****************************************************************************/
-        virtual void run(track_project::pipeline::TrackingBuffer x) = 0;
+        virtual void create_track_command(std::vector<std::array<TrackPoint, 4>> &new_track) = 0;
 
         /*****************************************************************************
-         * @brief 接收航迹融合指令
+         * @brief 航迹添加请求
          *
-         * 当需要融合两条航迹时调用此接口（如人工判定两条中断航迹实为同一目标）。
-         * 实现应调用航迹管理层的合并功能，并更新相关状态。
-         *
-         * @param source_track_id 源航迹ID（新航迹，将被删除）
-         * @param target_track_id 目标航迹ID（旧航迹，保留并接收数据）
+         * @param updated_track 卡尔曼滤波结果
          *****************************************************************************/
-        virtual void onTrackFusion(std::uint32_t source_track_id, std::uint32_t target_track_id) = 0;
+        virtual void add_track_command(std::vector<std::pair<TrackerHeader, TrackPoint>> &updated_track) = 0;
 
         /*****************************************************************************
-         * @brief reload
+         * @brief 航迹融合请求
          *
-         * 所有组件恢复到initialize的状态
+         * @param source_track_id
+         * @param target_track_id
          *****************************************************************************/
-        virtual void reload() = 0;
+        virtual void merge_command(std::uint32_t source_track_id, std::uint32_t target_track_id) = 0;
+
+        /*****************************************************************************
+         * @brief 清空数据区
+         *****************************************************************************/
+        virtual void clear_all_command() = 0;
 
     protected:
         // 保护构造函数，确保只能通过派生类实例化

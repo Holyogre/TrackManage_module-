@@ -21,7 +21,7 @@ namespace track_project
         {
         public:
             // 打印完整状态
-            static void printFullState(const TrackerManager &manager)
+            static void print_full_state(const TrackerManager &manager)
             {
                 std::stringstream ss;
                 ss << "\n"
@@ -29,16 +29,16 @@ namespace track_project
                 ss << "              TRACKER MANAGER 完整状态" << std::endl;
                 ss << std::string(60, '=') << std::endl;
 
-                printStatistics(manager, ss);
+                print_statistics(manager, ss);
                 ss << std::endl;
-                printTrackMapping(manager, ss);
+                print_track_mapping(manager, ss);
                 ss << std::endl;
-                printMemoryPool(manager, ss);
+                print_memory_pool(manager, ss);
                 ss << std::endl;
 
                 // 一致性检查
                 ss << "\n一致性检查: ";
-                if (validateConsistency(manager, ss))
+                if (validate_consistency(manager, ss))
                 {
                     ss << "✓ 通过" << std::endl;
                 }
@@ -55,32 +55,32 @@ namespace track_project
             }
 
             // 1. 打印统计信息
-            static void printStatistics(const TrackerManager &manager)
+            static void print_statistics(const TrackerManager &manager)
             {
                 std::stringstream ss;
-                printStatistics(manager, ss);
+                print_statistics(manager, ss);
                 LOG_DEBUG << ss.str();
             }
 
-            static void printStatistics(const TrackerManager &manager, std::stringstream &ss)
+            static void print_statistics(const TrackerManager &manager, std::stringstream &ss)
             {
                 ss << "系统统计:" << std::endl;
                 ss << std::string(50, '-') << std::endl;
-                ss << "  总容量: " << manager.getTotalCapacity() << " 个航迹" << std::endl;
-                ss << "  使用中: " << manager.getUsedCount() << " 个航迹" << std::endl;
+                ss << "  总容量: " << manager.get_total_capacity() << " 个航迹" << std::endl;
+                ss << "  使用中: " << manager.get_used_count() << " 个航迹" << std::endl;
                 ss << "  下个ID: " << manager.next_track_id_ << std::endl;
                 ss << "  点容量: " << manager.track_length << " 点/航迹" << std::endl;
             }
 
             // 2. 打印内存池详情
-            static void printMemoryPool(const TrackerManager &manager)
+            static void print_memory_pool(const TrackerManager &manager)
             {
                 std::stringstream ss;
-                printMemoryPool(manager, ss);
+                print_memory_pool(manager, ss);
                 LOG_DEBUG<<ss.str();
             }
 
-            static void printMemoryPool(const TrackerManager &manager, std::stringstream &ss)
+            static void print_memory_pool(const TrackerManager &manager, std::stringstream &ss)
             {
                 ss << "内存池详情 (" << manager.buffer_pool_.size() << "个槽位):" << std::endl;
                 ss << std::string(50, '-') << std::endl;
@@ -93,7 +93,7 @@ namespace track_project
                     {
                         active_count++;
                         ss << "  [" << std::setw(3) << i << "] 航迹" << std::setw(4) << container.header.track_id
-                           << " [状态:" << std::setw(4) << stateToString(container.header.state)
+                           << " [状态:" << std::setw(4) << state_to_string(container.header.state)
                            << ", 外推:" << std::setw(1) << container.header.extrapolation_count
                            << ", 点数:" << std::setw(3) << container.data.size() << "]";
 
@@ -114,14 +114,14 @@ namespace track_project
             }
 
             // 3. 打印航迹映射
-            static void printTrackMapping(const TrackerManager &manager)
+            static void print_track_mapping(const TrackerManager &manager)
             {
                 std::stringstream ss;
-                printTrackMapping(manager, ss);
+                print_track_mapping(manager, ss);
                 LOG_DEBUG<<ss.str();
             }
 
-            static void printTrackMapping(const TrackerManager &manager, std::stringstream &ss)
+            static void print_track_mapping(const TrackerManager &manager, std::stringstream &ss)
             {
                 ss << "航迹映射表 (" << manager.track_id_to_pool_index_.size() << "个活跃航迹):" << std::endl;
                 ss << std::string(50, '-') << std::endl;
@@ -139,7 +139,7 @@ namespace track_project
                     if (pool_index < manager.buffer_pool_.size())
                     {
                         const auto &container = manager.buffer_pool_[pool_index];
-                        ss << " [状态:" << stateToString(container.header.state)
+                        ss << " [状态:" << state_to_string(container.header.state)
                            << ", 点数:" << container.data.size() << "]";
 
                         // 验证一致性
@@ -158,7 +158,7 @@ namespace track_project
 
         private:
             // 状态转换辅助函数
-            static const char *stateToString(int state)
+            static const char *state_to_string(int state)
             {
                 switch (state)
                 {
@@ -173,19 +173,19 @@ namespace track_project
                 }
             }
 
-            static const char *boolToString(bool value)
+            static const char *bool_to_string(bool value)
             {
                 return value ? "是" : "否";
             }
 
             // 数据完整性检查
-            static bool validateConsistency(const TrackerManager &manager)
+            static bool validate_consistency(const TrackerManager &manager)
             {
                 std::stringstream ss;
-                return validateConsistency(manager, ss);
+                return validate_consistency(manager, ss);
             }
 
-            static bool validateConsistency(const TrackerManager &manager, std::stringstream &ss)
+            static bool validate_consistency(const TrackerManager &manager, std::stringstream &ss)
             {
                 bool consistent = true;
 
@@ -227,9 +227,9 @@ namespace track_project
             }
 
             // 验证单个航迹
-            static bool validateTrack(const TrackerManager &manager, std::uint32_t track_id)
+            static bool validate_track(const TrackerManager &manager, std::uint32_t track_id)
             {
-                return validateConsistency(manager) && manager.isValidTrack(track_id);
+                return validate_consistency(manager) && manager.is_valid_track(track_id);
             }
         };
 

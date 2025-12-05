@@ -49,42 +49,42 @@ namespace track_project::trackmanager
         /*****************************************************************************
          * @brief 清楚画布上的所有航迹
          *****************************************************************************/
-        void clearAll();
-        
+        void clear_all();
+
         /*****************************************************************************
          * @brief 打印航迹管理器完整状态到日志，包括统计信息（INFO）和内存池详情（DEBUG）
          *
          * @param manager 航迹管理器对象
          *****************************************************************************/
-        void printFullState(const TrackerManager &manager);
+        void print_full_state(const TrackerManager &manager);
 
     private:
         // 打印统计信息
-        void printStatistics(const TrackerManager &manager, std::stringstream &ss);
+        void print_statistics(const TrackerManager &manager, std::stringstream &ss);
 
         // 打印内存池详情
-        void printMemoryPool(const TrackerManager &manager, std::stringstream &ss);
+        void print_memory_pool(const TrackerManager &manager, std::stringstream &ss);
 
         // 状态转换辅助函数
-        const char *stateToString(int state);
+        const char *state_to_string(int state);
 
         // 坐标转换：经纬度到图像像素
-        cv::Point convertToImageCoords(double longitude, double latitude) const;
+        cv::Point convert_to_image_coords(double longitude, double latitude) const;
 
         // 绘制单个航迹
-        void drawSingleTrack(std::uint32_t track_id, const TrackerManager &manager);
+        void draw_single_track(std::uint32_t track_id, const TrackerManager &manager);
 
         // 绘制航迹线条
-        void drawTrackLines(const std::vector<cv::Point> &points);
+        void draw_track_lines(const std::vector<cv::Point> &points);
 
         // 绘制航迹标签
-        void drawTrackLabel(std::uint32_t track_id, const cv::Point &position);
+        void draw_track_label(std::uint32_t track_id, const cv::Point &position);
 
     private:
         // 画布参数
         cv::Mat img;                               // 画布
         double lon_min, lon_max, lat_min, lat_max; // 经纬度范围
-        std::uint32_t height, width;                         // 画布高度和宽度
+        std::uint32_t height, width;               // 画布高度和宽度
 
         // 航迹点存放空间,为提高速度采用预分配方式，仅被draw_track使用
         std::vector<std::uint32_t> active_track_ids;
