@@ -1,15 +1,15 @@
 /*****************************************************************************
  * @file ManagementService.hpp
- * @brief 管理服务实现类 - 对外暴露接口不变，内部使用线程循环处理指令
+ * @brief 航迹管理服务 - 对外统一接口，内部使用多线程处理指令
  *
- * 实现要求：
- * 1. 对外暴露接口不变（继承自TrackManagementAPI）
- * 2. 内部是一个循环，每次先处理merge，然后处理create，然后处理add指令
- * 3. 初始化的时候生成线程，一直循环
- * 4. 析构的时候释放线程
+ * 主要功能：
+ * 1. 航迹创建、更新、融合、删除全生命周期管理
+ * 2. 实时航迹与点迹可视化
+ * 3. 多线程优先级指令处理
+ * 4. 线程安全的数据缓冲区管理
  *
- * @version 0.1
- * @date 2025-12-05
+ * @version 1.0
+ * @date 2025-12-06
  *
  * @copyright Copyright (c) 2025
  *****************************************************************************/
@@ -25,21 +25,22 @@
 #include <condition_variable>
 #include <atomic>
 #include <functional>
+#include <cstdint>
 
-#include "../include/TrackManagementAPI.hpp"  
-#include "TrackerManager.hpp"
-#include "TrackerVisualizer.hpp"
+#include "defstruct.h"
+#include "../src/TrackerManager.hpp"
+#include "../src/TrackerVisualizer.hpp"
 
 namespace track_project
 {
 
     /**
      * @class ManagementService
-     * @brief 管理服务实现类，继承自TrackManagementAPI
+     * @brief 航迹管理服务主类 - 对外统一接口
      *
-     * 使用工作线程循环处理指令，指令处理顺序：merge -> create -> add
+     * 使用工作线程循环处理指令，指令处理优先级：DRAW -> MERGE -> CREATE -> ADD -> CLEAR_ALL
      */
-    class ManagementService : public TrackManagementAPI
+    class ManagementService
     {
     public:
         /*****************************************************************************
@@ -66,14 +67,14 @@ namespace track_project
          *
          * @param new_track 新航迹结构
          *****************************************************************************/
-        virtual void create_track_command(std::vector<std::array<TrackPoint, 4>> &new_track) override;
+        void create_track_command(std::vector<std::array<TrackPoint, 4>> &new_track);
 
         /*****************************************************************************
          * @brief 航迹添加请求
          *
          * @param updated_track 卡尔曼滤波结果
          *****************************************************************************/
-        virtual void add_track_command(std::vector<std::pair<TrackerHeader, TrackPoint>> &updated_track) override;
+        void add_track_command(std::vector<std::pair<TrackerHeader, TrackPoint>> &updated_track);
 
         /*****************************************************************************
          * @brief 航迹融合请求
@@ -81,19 +82,19 @@ namespace track_project
          * @param source_track_id
          * @param target_track_id
          *****************************************************************************/
-        virtual void merge_command(std::uint32_t source_track_id, std::uint32_t target_track_id) override;
+        void merge_command(std::uint32_t source_track_id, std::uint32_t target_track_id);
 
         /*****************************************************************************
          * @brief 点迹绘制请求
          *
          * @param point 请求绘制的点迹
          *****************************************************************************/
-        virtual void draw_point_command(std::vector<TrackPoint> &point) override;
+        void draw_point_command(std::vector<TrackPoint> &point);
 
         /*****************************************************************************
          * @brief 清空数据区
          *****************************************************************************/
-        virtual void clear_all_command() override;
+        void clear_all_command();
 
         /*****************************************************************************
          * @brief 获取TrackerManager引用（只读）
