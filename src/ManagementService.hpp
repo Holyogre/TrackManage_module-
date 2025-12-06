@@ -85,6 +85,13 @@ namespace track_project
         virtual void merge_command(std::uint32_t source_track_id, std::uint32_t target_track_id) override;
 
         /*****************************************************************************
+         * @brief 点迹绘制请求
+         *
+         * @param point 请求绘制的点迹
+         *****************************************************************************/
+        virtual void draw_point_command(std::vector<TrackPoint> &point) override;
+
+        /*****************************************************************************
          * @brief 清空数据区
          *****************************************************************************/
         virtual void clear_all_command() override;
@@ -98,10 +105,11 @@ namespace track_project
         // 指令类型枚举
         enum class CommandType
         {
-            MERGE,
-            CREATE,
-            ADD,
-            CLEAR_ALL
+            DRAW,       // 点迹绘制指令，优先级最高
+            MERGE,      // 航迹融合指令
+            CREATE,     // 航迹创建指令
+            ADD,        // 航迹添加指令
+            CLEAR_ALL   // 清空所有指令
         };
 
         // 指令结构体
@@ -112,6 +120,11 @@ namespace track_project
             // 根据不同指令类型存储不同数据
             union
             {
+                struct
+                {
+                    std::vector<TrackPoint> *point_data;  // DRAW指令数据
+                } draw_data;
+
                 struct
                 {
                     std::uint32_t source_track_id;
@@ -173,6 +186,13 @@ namespace track_project
         void process_clear_all();
 
         /*****************************************************************************
+         * @brief 处理draw指令
+         *
+         * @param point_data 点迹数据
+         *****************************************************************************/
+        void process_draw(std::vector<TrackPoint> &point_data);
+
+        /*****************************************************************************
          * @brief 处理指定类型的所有指令
          *
          * @param type 要处理的指令类型
@@ -197,6 +217,7 @@ namespace track_project
         // 数据存储（用于避免数据在队列中失效）
         std::vector<std::array<TrackPoint, 4>> create_buffer_;
         std::vector<std::pair<TrackerHeader, TrackPoint>> add_buffer_;
+        std::vector<TrackPoint> draw_buffer_;  // DRAW指令数据缓冲区
         std::mutex buffer_mutex_;
     };
 

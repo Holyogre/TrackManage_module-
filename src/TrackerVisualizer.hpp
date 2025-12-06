@@ -47,6 +47,11 @@ namespace track_project::trackmanager
         void draw_track(const TrackerManager &manager);
 
         /*****************************************************************************
+         * @brief 绘制点云
+         *****************************************************************************/
+        void draw_point_cloud(std::vector<TrackPoint> x);
+
+        /*****************************************************************************
          * @brief 清楚画布上的所有航迹
          *****************************************************************************/
         void clear_all();
@@ -83,6 +88,7 @@ namespace track_project::trackmanager
     private:
         // 画布参数
         cv::Mat img;                               // 画布
+        cv::Mat bg_img;                            // 背景图像，存储点迹
         double lon_min, lon_max, lat_min, lat_max; // 经纬度范围
         std::uint32_t height, width;               // 画布高度和宽度
 

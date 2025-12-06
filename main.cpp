@@ -94,6 +94,89 @@ void test_priority_processing()
     std::cout << "\n=== 优先级测试完成 ===" << std::endl;
 }
 
+// 测试点迹绘制功能
+void test_point_cloud_drawing()
+{
+    std::cout << "\n=== 测试点迹绘制功能 ===" << std::endl;
+    
+    // 创建ManagementService实例
+    auto service = std::make_unique<track_project::ManagementService>(100, 50);
+    std::cout << "ManagementService创建成功" << std::endl;
+    
+    // 等待工作线程启动
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    
+    // 创建测试点迹数据
+    std::vector<track_project::TrackPoint> point_cloud;
+    
+    // 创建一些测试点迹
+    for (int i = 0; i < 20; ++i)
+    {
+        track_project::TrackPoint point;
+        // 在可视范围内生成点迹 (119.0-121.0, 29.0-31.0)
+        point.longitude = 119.5 + (i % 10) * 0.15;  // 119.5-121.0
+        point.latitude = 29.5 + (i / 10) * 0.15;    // 29.5-30.5
+        point.angle = 45.0 + i * 5.0;
+        point.distance = 10.0 + i * 0.5;
+        point.sog = 5.0 + i * 1.0;  // 速度大于0.1，会绘制方向线
+        point.cog = 30.0 + i * 15.0; // 航向
+        point.is_associated = (i % 3 == 0); // 每3个点有一个是已关联的
+        point.time = track_project::Timestamp::now();
+        
+        point_cloud.push_back(point);
+        
+        std::cout << "创建点迹 " << i << ": 位置(" 
+                  << std::fixed << std::setprecision(4) << point.longitude << ", " << point.latitude 
+                  << "), 关联状态: " << (point.is_associated ? "已关联" : "未关联")
+                  << ", 速度: " << point.sog << " m/s" << std::endl;
+    }
+    
+    std::cout << "\n总共创建 " << point_cloud.size() << " 个测试点迹" << std::endl;
+    std::cout << "其中 " << std::count_if(point_cloud.begin(), point_cloud.end(), 
+                                         [](const auto& p) { return p.is_associated; })
+              << " 个点迹已关联（应显示为蓝色）" << std::endl;
+    std::cout << "其中 " << std::count_if(point_cloud.begin(), point_cloud.end(),
+                                         [](const auto& p) { return !p.is_associated; })
+              << " 个点迹未关联（应显示为红色）" << std::endl;
+    
+    // 调用点迹绘制函数
+    std::cout << "\n调用 draw_point_command 绘制点迹..." << std::endl;
+    service->draw_point_command(point_cloud);
+    
+    // 等待绘制完成
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    
+    // 创建一些航迹来测试点迹背景与航迹的叠加
+    std::cout << "\n创建测试航迹以验证点迹背景..." << std::endl;
+    {
+        std::vector<std::array<track_project::TrackPoint, 4>> create_data;
+        std::array<track_project::TrackPoint, 4> track_array;
+        for (int j = 0; j < 4; ++j)
+        {
+            track_array[j] = create_test_track_point(120.0, 30.0, j);
+        }
+        create_data.push_back(track_array);
+        
+        service->create_track_command(create_data);
+        std::cout << "已发送CREATE指令创建测试航迹" << std::endl;
+    }
+    
+    // 等待航迹绘制（draw_track会显示点迹背景）
+    std::cout << "\n等待航迹绘制（将显示点迹背景）..." << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    
+    // 清空
+    service->clear_all_command();
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    
+    std::cout << "\n=== 点迹绘制测试完成 ===" << std::endl;
+    std::cout << "注意：如果OpenCV窗口打开，您应该能看到：" << std::endl;
+    std::cout << "1. 蓝色点：已关联的点迹" << std::endl;
+    std::cout << "2. 红色点：未关联的点迹" << std::endl;
+    std::cout << "3. 方向线：速度大于0.1m/s的点迹会有方向指示" << std::endl;
+    std::cout << "4. 航迹线：黑色的航迹线叠加在点迹背景上" << std::endl;
+}
+
 // 测试多线程并发
 void test_concurrent_commands()
 {
@@ -197,8 +280,11 @@ int main()
     
     try
     {
+        // 测试点迹绘制功能
+        test_point_cloud_drawing();
+        
         // 测试优先级处理
-        test_priority_processing();
+        // test_priority_processing();
         
         // 测试并发处理
         // test_concurrent_commands();

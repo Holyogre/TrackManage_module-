@@ -58,10 +58,17 @@ namespace track_project
         /*****************************************************************************
          * @brief 航迹融合请求
          *
-         * @param source_track_id
-         * @param target_track_id
+         * @param source_track_id 源航迹ID（将被删除），新航迹
+         * @param target_track_id 目标航迹ID（保留并接收数据），原本将消亡的航迹
          *****************************************************************************/
         virtual void merge_command(std::uint32_t source_track_id, std::uint32_t target_track_id) = 0;
+
+        /*****************************************************************************
+         * @brief 点迹绘制请求
+         *
+         * @param point 请求绘制的点迹
+         *****************************************************************************/
+        virtual void draw_point_command(std::vector<TrackPoint> &point) = 0;
 
         /*****************************************************************************
          * @brief 清空数据区

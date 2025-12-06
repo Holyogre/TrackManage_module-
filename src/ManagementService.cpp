@@ -65,6 +65,7 @@ namespace track_project
             std::lock_guard<std::mutex> lock(buffer_mutex_);
             create_buffer_.clear();
             add_buffer_.clear();
+            draw_buffer_.clear();
         }
     }
 
@@ -161,8 +162,9 @@ namespace track_project
     /*****************************************************************************
      * @brief 工作线程函数，循环处理指令
      *
-     * 按照优先级顺序处理指令：MERGE -> CREATE -> ADD -> CLEAR_ALL
-     * 每个循环迭代中，先处理所有MERGE指令，然后是CREATE，最后是ADD
+     * 按照优先级顺序处理指令：DRAW -> MERGE -> CREATE -> ADD -> CLEAR_ALL
+     * DRAW指令优先级最高，必须优先执行
+     * 每个循环迭代中，先处理所有DRAW指令，然后是MERGE，最后是CREATE和ADD
      *****************************************************************************/
     void ManagementService::worker_thread()
     {
@@ -172,6 +174,9 @@ namespace track_project
         {
             // 按照优先级顺序处理指令
             bool processed = false;
+
+            // 处理所有DRAW指令（优先级最高）
+            processed |= process_commands_by_type(CommandType::DRAW);
 
             // 处理所有MERGE指令
             processed |= process_commands_by_type(CommandType::MERGE);
@@ -185,6 +190,7 @@ namespace track_project
             // 处理CLEAR_ALL指令（如果有）
             processed |= process_commands_by_type(CommandType::CLEAR_ALL);
 
+            // 绘制航迹（显示当前状态）
             track_visualizer_.draw_track(tracker_manager_);
 
             // 如果没有指令处理，等待新指令
@@ -280,6 +286,13 @@ namespace track_project
     {
         switch (cmd.type)
         {
+        case CommandType::DRAW:
+            if (cmd.draw_data.point_data != nullptr)
+            {
+                process_draw(*cmd.draw_data.point_data);
+            }
+            break;
+
         case CommandType::MERGE:
             process_merge(cmd.merge_data.source_track_id, cmd.merge_data.target_track_id);
             break;
@@ -394,9 +407,47 @@ namespace track_project
      *****************************************************************************/
     void ManagementService::process_clear_all()
     {
-        std::cout << "ManagementService: 处理清空所有指令" << std::endl;
+        LOG_INFO << "ManagementService: 全部清空";
         tracker_manager_.clear_all();
-        std::cout << "ManagementService: 所有航迹已清空" << std::endl;
+    }
+
+    /*****************************************************************************
+     * @brief 点迹绘制请求
+     *
+     * @param point 请求绘制的点迹
+     *****************************************************************************/
+    void ManagementService::draw_point_command(std::vector<TrackPoint> &point)
+    {
+        std::lock_guard<std::mutex> lock(buffer_mutex_);
+
+        // 复制数据到缓冲区
+        draw_buffer_ = point;
+
+        // 创建指令并加入队列
+        Command cmd(CommandType::DRAW);
+        cmd.draw_data.point_data = &draw_buffer_;
+
+        {
+            std::lock_guard<std::mutex> queue_lock(queue_mutex_);
+            command_queue_.push(cmd);
+            queue_cv_.notify_one();
+        }
+
+        std::cout << "ManagementService: 点迹绘制指令已加入队列，数量: " << point.size() << std::endl;
+    }
+
+    /*****************************************************************************
+     * @brief 处理draw指令
+     *
+     * @param point_data 点迹数据
+     *****************************************************************************/
+    void ManagementService::process_draw(std::vector<TrackPoint> &point_data)
+    {
+        LOG_DEBUG << "ManagementService: 处理点迹绘制指令，数量: " << point_data.size() << std::endl;
+        
+        // 调用TrackerVisualizer的draw_point_cloud函数
+        track_visualizer_.draw_point_cloud(point_data);
+        
     }
 
 } // namespace track_project

@@ -11,6 +11,7 @@
 #include "TrackerVisualizer.hpp"
 #include <sstream>
 #include <iomanip>
+#include <cmath>
 
 namespace track_project::trackmanager
 {
@@ -18,7 +19,8 @@ namespace track_project::trackmanager
     TrackerVisualizer::TrackerVisualizer(double lon_min, double lon_max,
                                          double lat_min, double lat_max,
                                          std::uint32_t track_size, std::uint32_t track_length)
-        : img(1440, 2560, CV_8UC3, cv::Scalar(255, 255, 255)), // 彩色RGB画布，背景是白色
+        : img(1440, 2560, CV_8UC3, cv::Scalar(255, 255, 255)),    // 彩色RGB画布，背景是白色
+          bg_img(1440, 2560, CV_8UC3, cv::Scalar(255, 255, 255)), // 彩色RGB画布，背景是白色，存储背景
           lon_min(lon_min), lon_max(lon_max),
           lat_min(lat_min), lat_max(lat_max)
     {
@@ -35,7 +37,7 @@ namespace track_project::trackmanager
 
     void TrackerVisualizer::draw_track(const TrackerManager &manager)
     {
-        img.setTo(cv::Scalar(255, 255, 255)); // 清空图像
+        bg_img.copyTo(img); // 显示点迹结果
 
         // 使用公开只读接口获取活跃航迹ID
         active_track_ids = manager.get_active_track_ids();
@@ -47,6 +49,52 @@ namespace track_project::trackmanager
 
         cv::imshow("Track Visualizer", img);
         cv::waitKey(10);
+    }
+
+    void TrackerVisualizer::draw_point_cloud(std::vector<TrackPoint> x)
+    {
+        // 重置背景为白色
+        bg_img.setTo(cv::Scalar(255, 255, 255));
+
+        if (x.empty())
+        {
+            LOG_ERROR << "TrackerVisualizer: 点迹向量为空，跳过绘制" << std::endl;
+            return;
+        }
+
+        LOG_DEBUG << "TrackerVisualizer: 开始绘制点迹，数量: " << x.size() << std::endl;
+
+        // 绘制每个点迹
+        for (const auto &point : x)
+        {
+            // 将经纬度坐标转换为图像坐标
+            cv::Point img_point = convert_to_image_coords(point.longitude, point.latitude);
+
+            // 检查点是否在图像范围内
+            if (img_point.x < 0 || img_point.x >= width ||
+                img_point.y < 0 || img_point.y >= height)
+            {
+                LOG_DEBUG << "TrackerVisualizer: 点迹坐标超出图像范围，跳过绘制 ("
+                          << point.longitude << ", " << point.latitude << ")" << std::endl;
+                continue;
+            }
+
+            // 根据点迹属性选择颜色
+            cv::Scalar point_color;
+            if (point.is_associated)
+            {
+                // 已关联的点迹使用蓝色
+                point_color = cv::Scalar(255, 0, 0); // BGR格式：蓝色
+            }
+            else
+            {
+                // 未关联的点迹使用红色
+                point_color = cv::Scalar(0, 0, 255); // BGR格式：红色
+            }
+
+            // 在背景图像上绘制点迹（使用小圆点）
+            cv::circle(bg_img, img_point, 3, point_color, -1); // 半径为3的实心圆
+        }
     }
 
     cv::Point TrackerVisualizer::convert_to_image_coords(double longitude, double latitude) const
