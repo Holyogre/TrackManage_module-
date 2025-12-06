@@ -106,9 +106,9 @@ namespace track_project
 
     struct TrackPoint
     {
-        // 对照信息
-        double angle;    // 雷达观测角度，雷达法线顺时针方向，度
-        double distance; // 雷达观测距离，距离雷达站距离，km
+        // // 对照信息
+        // double angle;    // 雷达观测角度，雷达法线顺时针方向，度
+        // double distance; // 雷达观测距离，距离雷达站距离，km
 
         // 点迹基础信息
         double longitude;

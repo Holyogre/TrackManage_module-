@@ -103,8 +103,6 @@ TEST_CASE("TrackerManager 放入元素", "[TrackerManager][push]")
     test_point.latitude = 39.9093;
     test_point.sog = 10.5;
     test_point.cog = 45.0;
-    test_point.angle = 30.0;
-    test_point.distance = 1000.0;
     test_point.is_associated = true;
 
     SECTION("放入不存在的航迹")
@@ -229,8 +227,6 @@ TEST_CASE("TrackerManager NUMA性能测试", "[TrackerManager][test_bench_chrono
     point.latitude = 39.9093;
     point.sog = 10.5;
     point.cog = 45.0;
-    point.angle = 30.0;
-    point.distance = 1000.0;
     point.is_associated = true;
     point.time = Timestamp::now();
 
@@ -327,8 +323,6 @@ TEST_CASE("TrackerManager 核心性能测试", "[TrackerManager][benchmark]")
     point.latitude = 39.9093;
     point.sog = 10.5;
     point.cog = 45.0;
-    point.angle = 30.0;
-    point.distance = 1000.0;
     point.is_associated = true;
     point.time = Timestamp::now();
 

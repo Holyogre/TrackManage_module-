@@ -104,8 +104,6 @@ TEST_CASE("TrackerManager 可视化绘制性能测试", "[TrackerVisualizer][ben
     base_point.latitude = 39.9093;
     base_point.sog = 10.5;
     base_point.cog = 45.0;
-    base_point.angle = 30.0;
-    base_point.distance = 1000.0;
     base_point.is_associated = true;
     base_point.time = track_project::Timestamp::now();
 
