@@ -26,8 +26,7 @@
 #include <atomic>
 #include <functional>
 
-#include "../include/TrackManagementAPI.hpp"
-#include "../include/defstruct.h"
+#include "../include/TrackManagementAPI.hpp"  
 #include "TrackerManager.hpp"
 #include "TrackerVisualizer.hpp"
 

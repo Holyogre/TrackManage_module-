@@ -1,13 +1,3 @@
-/*****************************************************************************
- * @file TrackerVisualizer.cpp
- * @author xjl (xjl20011009@126.com)
- * @brief 航迹管理器可视化模块实现
- * @version 0.1
- * @date 2025-11-29
- *
- * @copyright Copyright (c) 2025
- *
- *****************************************************************************/
 #include "TrackerVisualizer.hpp"
 #include <sstream>
 #include <iomanip>

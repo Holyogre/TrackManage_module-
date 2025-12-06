@@ -1,40 +1,143 @@
 # 航迹管理模块 | TrackManager
-一个用来管理航迹并进行可视化的工程
 
----
-## 环境依赖
-  - Catch2 (v3.x) 仅测试用，可选
-  - Spdlog (>=1.5.0) 日志系统
----
-## 项目概述
-1. **使用方式**
-   - 所有对外接口函数均在include文件下，引用trackerManager.hpp即可。编译CPP文件以LIB方式提供服务
-   - 测试文件在tests文件夹下，通信组件具备特殊性，需要结合接收端进行检查
-2. **文件结构**
-   - 配置文件 [`config`](./config/)
-   - 头文件 [`include`](./include/)
-   - 源文件 [`src`](./src/)
-   - 工具库 [`utils`](./utils/)
-   - 测试代码 [`tests`](./tests/)
-   - 自动构建脚本 [`bmain.sh`](./bmain.sh)：
-3. **代码结构**
-   - 泛型环形存储容器： **latestKbuffer\<T\>**
-     - 循环存储，自动覆盖旧数据；能定点修改航迹点
-   - 航迹管理组件：**TrackerManager**
-     - 航迹记录（数据层）、终结管理；事务管理；
-     - 调用latestKbuffer\<trackerContainer\>实现
-   - 可视化组件：**TrackerVisualizer**
-     - 本站可视化： 基于 OpenCV 实现了航迹数据的基础可视化，具备航线和航迹号显示功能
-     - 整个流水线数据的可视化由通信组件实现，发送到对应端口,由HTML绘制（有空再做）
-   - **管理服务层**：**ManagementService**
-     - 对外暴露的虚函数接口，提供标准化的控制指令接口
-     - 主要功能：
-       - 接收上一级流水线完成指令 (`onPipelineComplete`)
-       - 接收航迹融合指令 (`onTrackFusion`)
-       - 服务状态管理 (`initialize`, `shutdown`, `getServiceStatus`)
-       - 航迹数据查询 (`getActiveTracks`, `getTrackData`)
-     - 组合调用可视化插件、日志插件和航迹管理层
-     - 和流水线结构对接，实现前后端分离
+一个高性能、模块化的航迹管理与可视化系统，专为雷达数据处理流水线设计。
+
+## 📋 项目简介
+
+TrackManager 是一个现代化的航迹管理框架，提供完整的航迹生命周期管理、实时可视化、多线程指令处理等功能。系统采用模块化设计，支持插件化扩展，适用于各种雷达数据处理场景。
+
+## 🚀 核心特性
+
+- **高性能内存管理**：基于环形缓冲区的泛型容器，支持零拷贝数据访问
+- **完整的航迹生命周期**：创建、更新、融合、删除全流程管理
+- **实时可视化**：基于 OpenCV 的实时航迹与点迹绘制，支持颜色编码和方向指示
+- **多线程指令处理**：优先级驱动的异步指令队列，确保关键操作及时响应
+- **模块化架构**：清晰的层次分离，支持插件化扩展
+- **生产级日志系统**：支持条件编译的日志插件，可在生产环境与调试模式间切换
+
+## 📁 项目结构
+
+```
+TrackManager/
+├── config/              # 配置文件
+├── include/            # 公共头文件
+│   ├── defstruct.h     # 数据结构定义
+│   └── TrackManagementAPI.hpp  # 管理服务接口
+├── src/                # 源代码
+│   ├── LatestKBuffer.hpp       # 泛型环形缓冲区
+│   ├── TrackerManager.hpp      # 航迹管理核心
+│   ├── TrackerVisualizer.hpp   # 可视化组件
+│   └── ManagementService.hpp   # 管理服务实现
+├── utils/              # 工具库
+│   └── Logger.hpp      # 日志系统
+├── tests/              # 测试代码
+└── build/              # 构建目录
+```
+
+## 🔧 环境依赖
+
+### 必需依赖
+- **C++17** 或更高版本
+- **CMake** (>= 3.10)
+- **OpenCV** (>= 4.0) - 可视化功能
+
+### 可选依赖
+- **Spdlog** (>= 1.5.0) - 增强日志功能（通过 `ENABLE_SPDLOG` 启用）
+- **Catch2** (v3.x) - 单元测试框架
+
+### 构建工具
+- **GCC** (>= 7.0) 或 **Clang** (>= 5.0)
+- **Make** 或 **Ninja**
+
+## 🏗️ 核心组件
+
+### 1. 泛型环形缓冲区 (`LatestKBuffer<T>`)
+- 循环存储，自动覆盖旧数据
+- 支持定点修改和批量拷贝
+- 智能内存拷贝策略（POD类型使用 memcpy，非POD类型使用安全循环）
+
+### 2. 航迹管理器 (`TrackerManager`)
+- 内存池管理，预分配资源避免运行时分配
+- 航迹创建、删除、融合、更新全功能支持
+- 零拷贝只读接口，提高数据访问效率
+
+### 3. 可视化组件 (`TrackerVisualizer`)
+- 实时航迹绘制：渐变黑色线条，新点透明度高，历史点透明度低
+- 点迹背景图：根据关联状态显示不同颜色（蓝色已关联，红色未关联）
+- 方向指示：为速度大于0.1m/s的点迹绘制方向线
+- 坐标转换：自动将经纬度坐标映射到图像像素
+
+### 4. 管理服务层 (`ManagementService`)
+- 对外统一接口，继承自 `TrackManagementAPI`
+- 多线程指令处理，优先级顺序：`DRAW -> MERGE -> CREATE -> ADD -> CLEAR_ALL`
+- 线程安全的指令队列和数据缓冲区
+- 完整的异常处理和资源管理
+
+## 🎯 使用方式
+
+### 快速开始
+```cpp
+#include "include/TrackManagementAPI.hpp"
+#include "src/ManagementService.hpp"
+
+int main() {
+    // 创建管理服务实例
+    auto service = std::make_unique<track_project::ManagementService>(1000, 500);
+    
+    // 发送点迹绘制请求
+    std::vector<track_project::TrackPoint> point_cloud;
+    // ... 填充点迹数据
+    service->draw_point_command(point_cloud);
+    
+    // 发送航迹创建请求
+    std::vector<std::array<track_project::TrackPoint, 4>> new_tracks;
+    // ... 填充航迹数据
+    service->create_track_command(new_tracks);
+    
+    return 0;
+}
+```
+
+### 构建项目
+```bash
+# 使用自动构建脚本
+./bmain.sh
+
+# 或手动构建
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j4
+```
+
+### 运行测试
+```bash
+cd build
+./test_trackVisualizer    # 可视化测试
+./test_trackerManager     # 管理器测试
+./test_latestBuffer       # 缓冲区测试
+./main                    # 集成测试
+```
+
+## 📊 性能指标
+
+| 组件 | 操作 | 性能 |
+|------|------|------|
+| **LatestKBuffer** | 点迹写入 | 0.0145 μs/点 |
+| **TrackerManager** | 航迹创建 | 10.77 μs/个 |
+| **TrackerManager** | 航迹删除 | 10.46 μs/个 |
+| **TrackerVisualizer** | 50万点绘制 | 75.5 ms (13.2 FPS) |
+| **TrackerVisualizer** | 100万点绘制 | 220.0 ms (4.5 FPS) |
+
+## 🔄 指令处理优先级
+
+系统按照以下优先级顺序处理指令，确保关键操作及时响应：
+
+1. **DRAW** - 点迹绘制指令（最高优先级）
+2. **MERGE** - 航迹融合指令
+3. **CREATE** - 航迹创建指令
+4. **ADD** - 航迹添加指令
+5. **CLEAR_ALL** - 清空所有指令
+
 
 ## 开发日志  
 ### 2025-10-24 至 2025-10-25
@@ -131,25 +234,8 @@
    - 通信组件：**TrackerComm**
      - 端口由commondata::Config结构体解析得到，禁止热重载
      - 监听端口，接收命令，执行控制
-2. 直接开始写管理服务层
-
-### 2025-12-04
-1. **管理服务层接口完善**
-   - 完成了 `ManagementService` 抽象基类的设计
-   - 定义了两个核心指令接口：
-     - `onPipelineComplete`: 接收上一级流水线完成指令，处理流水线缓冲区数据
-     - `onTrackFusion`: 接收航迹融合指令，合并两条航迹
-   - 添加了服务生命周期管理接口：
-     - `initialize`: 初始化服务
-     - `shutdown`: 停止服务
-     - `getServiceStatus`: 获取服务状态
-   - 添加了数据查询接口：
-     - `getActiveTracks`: 获取活跃航迹列表
-     - `getTrackData`: 获取指定航迹的点迹数据
-   - 接口设计遵循虚函数模式，支持多态实现和插件化扩展
-
-### 2025-12-06
-1. **ManagementService 实现完成**
+2. 抽象基类
+3.  完成了管理服务层 `ManagementService` 具体实现
    - 完成了 `ManagementService` 具体实现类的开发
    - 修复了编译错误：`TrackerVisualizer` 缺少默认构造函数的问题
    - 实现了工作线程模型，支持异步指令处理
@@ -168,7 +254,7 @@
      - 支持多线程并发指令处理
      - 正确处理指令优先级顺序
 
-2. **点迹绘制功能完善**
+4. **点迹绘制功能完善**
    - 完善了 `TrackerVisualizer::draw_point_cloud` 函数，支持点迹背景图绘制
    - 功能特性：
      - 支持绘制多个点迹，根据关联状态显示不同颜色（蓝色表示已关联，红色表示未关联）

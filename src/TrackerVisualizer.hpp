@@ -2,8 +2,10 @@
  * @file TrackerVisualizer.hpp
  * @author xjl (xjl20011009@126.com)
  * @brief 航迹管理器可视化模块
- * 1. 通过接口获取trackmanager的航迹信息，从而实时显示TrackerManager的航迹信息
- * 2. 使用OpenCV进行图像绘制，仅用于绘制航迹信息，不存在其他任何信息
+ * 1. 需求：trackmanager的航迹结构
+ * 2. 提供航迹绘制、点迹绘制、清零操作
+ * 3. 要求航迹后到达，不然只能显示点迹
+ *
  * @version 0.1
  * @date 2025-11-29
  *
