@@ -31,7 +31,7 @@ namespace track_project
      *****************************************************************************/
     ManagementService::ManagementService(std::uint32_t track_size, std::uint32_t point_size)
         : tracker_manager_(track_size, point_size),
-          track_visualizer_(119.0, 121.0, 29.0, 31.0, track_size, point_size),
+          track_visualizer_(119.9, 120.1, 29.9, 30.1, track_size, point_size),
           stop_flag_(false)
     {
         // 启动工作线程

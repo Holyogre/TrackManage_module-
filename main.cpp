@@ -32,11 +32,6 @@ int main()
     std::signal(SIGINT, signal_handler);
     std::signal(SIGTERM, signal_handler);
 
-    std::cout << "==========================================" << std::endl;
-    std::cout << "TrackManagerTest 示例程序" << std::endl;
-    std::cout << "按 Ctrl+C 停止测试" << std::endl;
-    std::cout << "==========================================" << std::endl;
-
     try
     {
         // 创建 ManagementService 实例
@@ -52,26 +47,19 @@ int main()
 
         // 配置测试参数
         track_project::TrackManagerTest::TestConfig config;
-        config.num_tracks = 100;
+        config.num_tracks = 10;
         config.update_times = 2000; // 更新间隔 2000ms
-        config.lon_min = 119.5;
-        config.lon_max = 120.5;
-        config.lat_min = 29.5;
-        config.lat_max = 30.5;
+        config.lon_min = 119.9;
+        config.lon_max = 120.1;
+        config.lat_min = 29.9;
+        config.lat_max = 30.1;
         config.min_speed = 10.0;  // 10 m/s
         config.max_speed = 100.0; // 100 m/s
         config.min_course = 0.0;
         config.max_course = 360.0;
         config.max_accel_sog = 10.0;
         config.max_accel_cog = 1.0;
-        config.draw_points = true;
-
-        std::cout << "\n测试配置：" << std::endl;
-        std::cout << "  航迹数量: " << config.num_tracks << std::endl;
-        std::cout << "  更新间隔: " << config.update_times << " ms" << std::endl;
-        std::cout << "  位置范围: 经度[" << config.lon_min << ", " << config.lon_max
-                  << "], 纬度[" << config.lat_min << ", " << config.lat_max << "]" << std::endl;
-        std::cout << "  速度范围: [" << config.min_speed << ", " << config.max_speed << "] m/s" << std::endl;
+        config.draw_points = false;
 
         // 启动测试
         tester->start(config);

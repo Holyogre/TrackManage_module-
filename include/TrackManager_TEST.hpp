@@ -54,10 +54,10 @@ namespace track_project
             std::uint32_t update_times = 1000; // 更新时间m/s
 
             // 位置范围（经纬度）
-            double lon_min = 119.0; // 经度最小值
-            double lon_max = 121.0; // 经度最大值
-            double lat_min = 29.0;  // 纬度最小值
-            double lat_max = 31.0;  // 纬度最大值
+            double lon_min = 119.9; // 经度最小值
+            double lon_max = 120.1; // 经度最大值
+            double lat_min = 29.9;  // 纬度最小值
+            double lat_max = 30.1;  // 纬度最大值
 
             // 速度范围
             double min_speed = 5.0;  // 最小速度（m/s）
