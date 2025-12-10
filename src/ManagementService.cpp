@@ -409,6 +409,7 @@ namespace track_project
     {
         LOG_INFO << "ManagementService: 全部清空";
         tracker_manager_.clear_all();
+        track_visualizer_.clear_all();
     }
 
     /*****************************************************************************
